@@ -4,7 +4,11 @@ from other_helpers import ListEnum
 #
 #
 LogLevels = ListEnum(
-    ['OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'STATISTIC', 'SYST HIGH', 'SYST MEDIUM', 'SYST LOW'])
+    [  # Standard log levels
+        'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'TRACE', 'DUMP',
+        'MESSAGES', 'UNKNOWN',
+        # Map log levels
+        'SYST HIGH', 'SYST MEDIUM', 'SYST LOW', 'SYST', 'DEBUG'])   # Mapgen also has a LOG level, we don't duplicate it
 
 #
 # Enumarates columns manipulated by the log parser for each session or log line

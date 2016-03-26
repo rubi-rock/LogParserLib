@@ -186,12 +186,17 @@ class ListEnum(list):
     # Initialize the dict from another one containing the enum list Names & values, plus publish all keys as properties
     # directly available from this object
     def __init__(self, enum_list):
+        # keep a trace of the list for the 'as_list' operator
+        self.__enum_list = enum_list
         # load the list
         for name in enum_list:
             self.append(name)
         # create the properties
         [object.__setattr__(self, name.replace(' ', '_'), name) for name in enum_list]
 
+    @property
+    def as_list(self):
+        return self.__enum_list
 
 # HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!!
 #

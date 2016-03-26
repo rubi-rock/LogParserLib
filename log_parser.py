@@ -2,13 +2,13 @@ import copy
 import logging
 import os.path
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import other_helpers
-from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo, PerformanceTriggerOff
+from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo, PerformanceTriggerOff, LogLevels
 from os_path_helper import FileSeeker
-from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper
+from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper, LogLineSplitter
 import csv_helper
 
 # from pythonbenchmark import measure
@@ -133,29 +133,6 @@ UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
 
 
 #
-# log line expression parser to break the line in its components (date, time, level...)
-#
-class LogLineSplitter(object):
-    __filter_engine = re.compile(
-        "(?P<date>[^, ]+[ ,]+[^, ]+)[, ]*(\((?P<map>\**[A-Z0-9]*\**)\)[, ]*)?\[(?P<level>[A-Z_]*)\][ ]*(\[(?P<module>[0-9A-Z_\.\-]*)\][ ]*)?(?P<message>.+)",
-        flags=re.IGNORECASE)
-
-    @staticmethod
-    def parse_log_line(line):
-        return LogLineSplitter.__filter_engine.match(line)
-
-    @staticmethod
-    def get_line_parts(line, sep):
-        broken_line = line.split(sep, 1)
-        return broken_line
-
-    @staticmethod
-    def extract_message(line, sep=']'):
-        broken_line = line.rsplit(sep, 1)
-        return broken_line[len(broken_line) - 1].strip()
-
-
-#
 # Instance of a log session : between 'BEGIN SESSION' and 'END SESSION'
 #
 class LogSession(object):
@@ -175,8 +152,8 @@ class LogSession(object):
             LogSession.__id_seq += 1
             self.__id = LogSession.__id_seq
             self.__lines = []
-            self.__module = ""
             self.__has_crashed = False
+            self.__termination_reason = None
             self.__info = {}
         except Exception:
             logging.exception('')
@@ -186,7 +163,7 @@ class LogSession(object):
     def __str__(self):
         try:
             if len(self.__lines) > 0:
-                return "\n\tSession #{0} - {1}\n\tEntries:\n\t\t{2}".format(self.__id, self.message, "\n\t\t".join(
+                return "\n\tSession #{0} - {1}\n\t\tEntries:\n\t\t{2}".format(self.__id, self.message, "\n\t\t".join(
                     str(entry) for entry in self.__lines))
             else:
                 return "\n\tSession #{0} - 0 entries".format(self.__id)
@@ -195,21 +172,29 @@ class LogSession(object):
             logging.exception('')
             raise
 
+    # Add an entry to the session to indicate when the session did not terminate properly (killed session, crash...)
     def add_crashed_session_log(self):
         if len(self.lines) > 0:
             idx = len(self.lines) - 1
             crash_log_line = copy.deepcopy(self.lines[idx])
         else:
+            # usually the LogLine creator takes care of splitting date and time from the date (text). We must keep it
+            # consistent
             crash_log_line = Log_Line(
                 {Headers.module: self.__module, Headers.date: self.__date, Headers.time: self.__time})
 
-        crash_log_line.set_value(Headers.message, 'SESSION TERMINATED ABNORMALLY (log "END SESSION" not found)')
-        crash_log_line.set_value(Headers.level, 'CRASHED')
-        crash_log_line.set_value(Headers.category, 'CRASHED')
+        if self.__termination_reason is not None:
+            crash_log_line.set_value(Headers.message, self.__termination_reason)
+            crash_log_line.set_value(Headers.category, 'KILLED')
+        else:
+            crash_log_line.set_value(Headers.message, 'SESSION TERMINATED ABNORMALLY - REASON UNKNOWN (log "END SESSION" not found)')
+            crash_log_line.set_value(Headers.category, 'CRASHED')
+        crash_log_line.set_value(Headers.level, LogLevels.EXCEPTION_TRACK)
         crash_log_line.set_value(Headers.group, 99999)  # Special group for the crashed indicator
         self.lines.append(crash_log_line)
         self.__has_crashed = True
 
+    # Add information to the session (version, user, configgroup...)
     def add_session_info(self, info_dict):
         for key, value in info_dict.items():
             if key in self.__info.keys():
@@ -236,10 +221,17 @@ class LogSession(object):
     def has_crashed(self):
         return self.__has_crashed
 
+    # Represents the information related to the session (version, user, configgroup...)
     @property
     def message(self):
         return '[{0}]'.format(']['.join("{0}={1}".format(key, value) for key, value in self.__info.items()))
 
+    # Set the termination reason when known
+    def set_termination_reason(self, reason):
+        self.__termination_reason = reason
+
+    # Export the session as a dictionary to be saved in a CSV file
+    # Todo: check if not faster an more readable if those properties are stored in a dict by default then pass the dict instead of manipulation a bunch of class members
     @property
     def as_csv_row(self):
         row = dict()
@@ -258,16 +250,22 @@ class LogSession(object):
 # save names and values which is memory consuming
 #
 class Log_Line(object):
+    # Constructor
     def __init__(self, line_dict):
         self.__data = line_dict
         self.__fixe_date()
         self.__data[Headers.type] = RowTypes.line
 
+    # Fix the date format. There are several cases:
+    #   . the date is already a date type - fine don't fix anything
+    #   . the date is text: then convert it to date and time objects. Sometimes the format is not "standard" therefore
+    #     instead of using the very efficient StringDateHelper.str_iso_to_date method then it uses the
+    #     dateutil.parser.parse method from Python which is very flexible but slow: ratio = x6
     def __fixe_date(self):
         value = self.__data[Headers.date]
-        if type(value) is not datetime.date:
+        if type(value) is not date:
             try:
-                dt = StringDateHelper.str_iso_to_date(value)  # very efficient: x2+ faster than dateutil.parser.parse
+                dt = StringDateHelper.str_iso_to_date(value)
             except:
                 dt = UNPARSABLE_DATETIME
             self.__data[Headers.date] = dt.date()
@@ -382,7 +380,14 @@ class ParsedLogFile(object):
             self.__current_session = None
 
     def add_session_info(self, dict):
+        if self.__current_session is None:
+            self.open_session()
         self.__current_session.add_session_info(dict)
+
+    def set_termination_reason(self, reason):
+        if self.__current_session is None:
+            self.open_session()
+        self.__current_session.set_termination_reason(reason)
 
     @property
     def as_csv_row(self):
@@ -448,11 +453,10 @@ class LogFileParser(object):
             raise
 
     # Extract possible session information
-    def __extract_session_info(self, line):
-        result = RegExpSet.is_text_containing(line, self.__session_info)
+    def __extract_session_info(self, log_line_dict):
+        result = RegExpSet.is_text_containing(log_line_dict.message, self.__session_info)
         if result is not None:
-            message = LogLineSplitter.extract_message(line)
-            message = LogLineSplitter.get_line_parts(message, ':')
+            message = LogLineSplitter.get_line_parts(log_line_dict.message, ':')
             info = {message[0].strip(): message[1].strip()}
             self.__add_session_info(info)
         return None
@@ -460,11 +464,13 @@ class LogFileParser(object):
     # Split a log line in its components (date, time, level, [module], message)
     def __split_line(self, line):
         try:
-            match = LogLineSplitter.parse_log_line(line)
-            if match is not None:
-                return Log_Line(match.groupdict())
-            else:
-                return None
+            log_dict = LogLineSplitter.low_level_parse_log_line(line)
+            return Log_Line(log_dict)
+            #match = LogLineSplitter.parse_log_line(line)
+            #if match is not None:
+            #    return Log_Line(match.groupdict())
+            #else:
+            #    return None
         except Exception:
             logging.exception('')
             raise
@@ -493,11 +499,20 @@ class LogFileParser(object):
                     if len(line) <= 1:
                         continue
 
-                    if self.process_session(line):
-                        continue  # because it was BEGIN SESSION or END SESSION
+                    log_line_dict = self.__split_line(line)
+                    if log_line_dict is None:
+                        # when statistics level is active there is too much garbage: not well formatted lines that are not recognized to log that
+                        # logging.error("Unable to parse line: %s", line)
+                        continue
 
-                    if self.__extract_session_info(line):
-                        continue  # because it was about the session info
+                    if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
+                        continue    # because it's not in the date range to process
+
+                    if self.__process_session(log_line_dict):
+                        continue    # because it was BEGIN SESSION or END SESSION
+
+                    if self.__extract_session_info(log_line_dict):
+                        continue    # because it was about the session info
 
                     filtered_out = True
                     for key, level in self.__filtered_in_levels.items():
@@ -507,31 +522,32 @@ class LogFileParser(object):
                         continue
 
                     if not self.__is_line_excluded(line):
-                        log_line_dict = self.__split_line(line)
-                        if log_line_dict is not None:
-                            if log_line_dict.date < self.__max_date.date():
-                                self.__set_line_category(log_line_dict)
-                                self.__parsed_file.add_log(log_line_dict)
-                        else:
-                            logging.error("Unable to parse line: %s", line)
+                        self.__set_line_category(log_line_dict)
+                        self.__parsed_file.add_log(log_line_dict)
             finally:
-                self.process_session('')  # Close the session if not yet done (crashed session?)
+                self.__process_session(None)  # Close the session if not yet done (crashed session?)
                 text_file.close()
         except Exception:
             logging.exception('')
             raise
 
-    def process_session(self, line):
-        if 'BEGIN SESSION' in line:
-            # 2 open session in a row without a close session implies a session that was terminated abnormaly
-            self.__close_session(crashedsession=self.__session_opened)
-            log_line_dict = self.__split_line(line)
-            self.__open_session(log_line_dict)
-            return True
-        elif 'END SESSION' in line:
-            self.__close_session()
-            return True
-        else:
+    def __process_session(self, log_line_dict):
+        try:
+            if log_line_dict is not None and log_line_dict.message.startswith('BEGIN SESSION'):
+                # 2 open session in a row without a close session implies a session that was terminated abnormaly
+                self.__close_session(crashedsession=self.__session_opened)
+                self.__open_session(log_line_dict)
+                return True
+            elif log_line_dict is None or log_line_dict.message.startswith('END SESSION'):
+                self.__close_session()
+                return True
+            elif log_line_dict is not None and 'session is terminated' in log_line_dict.message:
+                    self.__set_session_termination_reason(log_line_dict.message)
+                    return True
+            else:
+                return False
+        except:
+            logging.exception('')
             return False
 
     def __open_session(self, log_dict=None):
@@ -545,6 +561,8 @@ class LogFileParser(object):
     def __add_session_info(self, dict):
         self.__parsed_file.add_session_info(dict)
 
+    def __set_session_termination_reason(self, reason):
+        self.parsed_file.set_termination_reason(reason)
 
 #
 # Walk through a folder and its sub folders to find and analyse log files
@@ -582,7 +600,15 @@ class FolderLogParser(object):
 
     def filter_on_date(self, log_file_info_to_filter):
         try:
-            filtered_in = self.__min_date <= log_file_info_to_filter.date <= self.__max_date
+            # Just ignore the MAPGEN files, their format is not as expected (Purkinje Standard Log Format as implemented
+            # in debug tools to be compliant in 2.0 with the log format from 1.x at that time). Anyway all logs are now
+            # (5.13+) in the same file than the running application instead of a separate log file
+            if log_file_info_to_filter.file_name.startswith('mapgen.'):
+                return False
+
+            # keeps only files that are in the requested date range - be careful: logs changed recently can contain logs
+            # requested from an older date. Therefore the filter can apply only on the end date.
+            filtered_in = self.__min_date <= log_file_info_to_filter.date
             logging.info('Log file filtered %s: %s', self.__filtering_status[filtered_in],
                          log_file_info_to_filter.fullname)
             return filtered_in
@@ -683,7 +709,7 @@ class FolderLogParser(object):
                     "Processing log files done with a total of {0} files and {1} lines parsed in {2} sec. Output: {3} files with {4} sessions containing a total of {5} lines to process!!!".format(
                         self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count,
                         self.sessions_count, self.total_lines_to_analyze))
-                time_per_line = pt.time / self.lines_parsed
+                time_per_line = pt.time / self.lines_parsed if self.lines_parsed > 0 else 0
                 logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                     et.time_to_str,
                     time_per_line * 1000,
@@ -704,7 +730,7 @@ class FolderLogParser(object):
             csv_file_name = csv_helper.WriteDictToCSV(self, csv_file_name)
 
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
-                time_per_line = pt.time / self.total_lines_to_analyze
+                time_per_line = pt.time / self.total_lines_to_analyze if self.total_lines_to_analyze > 0 else 0
                 logging.info("Saved in CSV file {0}".format(csv_file_name))
                 logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                     et.time_to_str,

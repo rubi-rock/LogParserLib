@@ -156,7 +156,8 @@ if __name__ == '__main__':
     params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories}
     flp = log_parser.FolderLogParser(**params)
 
-    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
+    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=3, day=1), datetime.datetime(year=2016, month=3, day=31))
+    #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS/log - copie/bnbdobson", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
     #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
