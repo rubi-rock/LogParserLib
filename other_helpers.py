@@ -58,6 +58,7 @@ def do_cprofile(func):
             return result
         finally:
             profile.print_stats()
+
     return profiled_func
 
 
@@ -108,6 +109,7 @@ class LogUtility(object):
         self.__file_logger.setFormatter(formatter)
         logger.addHandler(self.__file_logger)
 
+
 '''
     Singleton that helps to tune logging into console and a file as we need.
 '''
@@ -135,7 +137,7 @@ class ElapseTimer(object):
 
     @property
     def time(self):
-        return  time.perf_counter() - self.__start_time
+        return time.perf_counter() - self.__start_time
 
     @property
     def time_to_str(self):
@@ -164,7 +166,7 @@ class DictEnum(OrderedDict):
     def __init__(self, enum_list):
         # load the list
         if type(enum_list) is dict or type(enum_list) is OrderedDict:
-            self.update( enum_list)
+            self.update(enum_list)
         elif type(enum_list) is tuple or type(enum_list) is list:
             for name in enum_list:
                 self[name] = name

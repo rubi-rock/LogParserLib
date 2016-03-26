@@ -17,16 +17,19 @@ def ReadCSVasDict(csv_file):
     return
 '''
 
-def WriteDictToCSV(log_folder_parser, csv_file_name = None):
+
+def WriteDictToCSV(log_folder_parser, csv_file_name=None):
     try:
         if csv_file_name is None:
-            csv_file_name = os.path.join(os.path.curdir, 'log-file-parsed - %s.csv' % datetime.now().strftime('%Y%m%d-%H%M%S'))
+            csv_file_name = os.path.join(os.path.curdir,
+                                         'log-file-parsed - %s.csv' % datetime.now().strftime('%Y%m%d-%H%M%S'))
         elif not os.path.isabs(csv_file_name):
             csv_file_name = os.path.join(os.path.curdir, csv_file_name)
 
         headers = log_folder_parser.csv_header
         with open(csv_file_name, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL, fieldnames=log_folder_parser.csv_header)
+            writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL,
+                                    fieldnames=log_folder_parser.csv_header)
             writer.writeheader()
 
             # dump the file

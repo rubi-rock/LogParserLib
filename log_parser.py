@@ -10,7 +10,8 @@ from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper
 import csv_helper
-#from pythonbenchmark import measure
+
+# from pythonbenchmark import measure
 
 '''
     The log parser walks through a folder and its subfolder to locate .log files from Purkinje then process them to build
@@ -122,9 +123,9 @@ import csv_helper
 '''
 
 # Change the log level of DETAILLED_LOGGING_LEVEL to put more detail on the console (logging.info)
-DETAILLED_LOGGING_NONE = 0          # Nothing
-DETAILLED_LOGGING_FILE = 1          # Statis about the file only
-DETAILLED_LOGGING_SESSION = 2       # details of the file (sessions & lines preserved)
+DETAILLED_LOGGING_NONE = 0  # Nothing
+DETAILLED_LOGGING_FILE = 1  # Statis about the file only
+DETAILLED_LOGGING_SESSION = 2  # details of the file (sessions & lines preserved)
 DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_FILE
 
 # Date used when the date and time from the log line cannot be parsed
@@ -136,8 +137,8 @@ UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
 #
 class LogLineSplitter(object):
     __filter_engine = re.compile(
-            "(?P<date>[^, ]+[ ,]+[^, ]+)[, ]*(\((?P<map>\**[A-Z0-9]*\**)\)[, ]*)?\[(?P<level>[A-Z_]*)\][ ]*(\[(?P<module>[0-9A-Z_\.\-]*)\][ ]*)?(?P<message>.+)",
-            flags=re.IGNORECASE)
+        "(?P<date>[^, ]+[ ,]+[^, ]+)[, ]*(\((?P<map>\**[A-Z0-9]*\**)\)[, ]*)?\[(?P<level>[A-Z_]*)\][ ]*(\[(?P<module>[0-9A-Z_\.\-]*)\][ ]*)?(?P<message>.+)",
+        flags=re.IGNORECASE)
 
     @staticmethod
     def parse_log_line(line):
@@ -149,7 +150,7 @@ class LogLineSplitter(object):
         return broken_line
 
     @staticmethod
-    def extract_message(line, sep = ']'):
+    def extract_message(line, sep=']'):
         broken_line = line.rsplit(sep, 1)
         return broken_line[len(broken_line) - 1].strip()
 
@@ -161,7 +162,7 @@ class LogSession(object):
     __id_seq = 0
 
     # constructor
-    def __init__(self, log_dict = None):
+    def __init__(self, log_dict=None):
         try:
             if log_dict is None:
                 self.__module = 'Unknown'
@@ -185,9 +186,10 @@ class LogSession(object):
     def __str__(self):
         try:
             if len(self.__lines) > 0:
-                return "\n\tSession #{0} - {1}\n\tEntries:\n\t\t{2}".format( self.__id, self.message, "\n\t\t".join(str(entry) for entry in self.__lines))
+                return "\n\tSession #{0} - {1}\n\tEntries:\n\t\t{2}".format(self.__id, self.message, "\n\t\t".join(
+                    str(entry) for entry in self.__lines))
             else:
-                return "\n\tSession #{0} - 0 entries".format( self.__id)
+                return "\n\tSession #{0} - 0 entries".format(self.__id)
 
         except Exception:
             logging.exception('')
@@ -198,12 +200,13 @@ class LogSession(object):
             idx = len(self.lines) - 1
             crash_log_line = copy.deepcopy(self.lines[idx])
         else:
-            crash_log_line = Log_Line({Headers.module: self.__module, Headers.date: self.__date, Headers.time: self.__time})
+            crash_log_line = Log_Line(
+                {Headers.module: self.__module, Headers.date: self.__date, Headers.time: self.__time})
 
         crash_log_line.set_value(Headers.message, 'SESSION TERMINATED ABNORMALLY (log "END SESSION" not found)')
         crash_log_line.set_value(Headers.level, 'CRASHED')
         crash_log_line.set_value(Headers.category, 'CRASHED')
-        crash_log_line.set_value(Headers.group, 99999) # Special group for the crashed indicator
+        crash_log_line.set_value(Headers.group, 99999)  # Special group for the crashed indicator
         self.lines.append(crash_log_line)
         self.__has_crashed = True
 
@@ -249,6 +252,7 @@ class LogSession(object):
         row[Headers.message] = self.message
         return row
 
+
 #
 # Parsed log line : date, time, level, module, message... in a structured way. It saves memory because a dict has to
 # save names and values which is memory consuming
@@ -263,7 +267,7 @@ class Log_Line(object):
         value = self.__data[Headers.date]
         if type(value) is not datetime.date:
             try:
-                dt = StringDateHelper.str_iso_to_date(value)    # very efficient: x2+ faster than dateutil.parser.parse
+                dt = StringDateHelper.str_iso_to_date(value)  # very efficient: x2+ faster than dateutil.parser.parse
             except:
                 dt = UNPARSABLE_DATETIME
             self.__data[Headers.date] = dt.date()
@@ -363,12 +367,12 @@ class ParsedLogFile(object):
             raise
 
     # Open a new session and set the current session - used to add new logs
-    def open_session(self, log_dict = None):
+    def open_session(self, log_dict=None):
         self.__current_session = LogSession(log_dict)
         self.__sessions.append(self.__current_session)
 
     # close the current session - if empty then delete it because we are not interested in sessions not meanningful
-    def close_session(self, crashedsession = False):
+    def close_session(self, crashedsession=False):
         # document a crashed session (application crash, process killed)
         if crashedsession:
             self.__current_session.add_crashed_session_log()
@@ -388,8 +392,6 @@ class ParsedLogFile(object):
         row[Headers.date] = self.parsed_file_info.date.date()
         row[Headers.time] = self.parsed_file_info.date.time()
         return row
-
-
 
 
 #
@@ -460,7 +462,7 @@ class LogFileParser(object):
         try:
             match = LogLineSplitter.parse_log_line(line)
             if match is not None:
-                return  Log_Line(match.groupdict())
+                return Log_Line(match.groupdict())
             else:
                 return None
         except Exception:
@@ -471,7 +473,7 @@ class LogFileParser(object):
     def __set_line_category(self, line_dict):
         category = RegExpSet.search_any_expression(line_dict.message, self.__re_categories)
         if category is not None:
-            category = category.strip("0123456789.")    # remove numbers before category names (e.g. 71.EXCEPTION)
+            category = category.strip("0123456789.")  # remove numbers before category names (e.g. 71.EXCEPTION)
             line_dict.set_value(Headers.category, category)
 
     # Parse one log file based on the exclusions (logs to ignore) and categories (which category the log belongs to).
@@ -482,7 +484,8 @@ class LogFileParser(object):
                 exit()
 
             logging.info("Processing file: %s", file_name)
-            text_file = open(file_name, mode='rt', encoding='latin-1')  # required to use latin-1 because logs contain french
+            text_file = open(file_name, mode='rt',
+                             encoding='latin-1')  # required to use latin-1 because logs contain french
             try:
                 for line in iter(text_file):
                     self.__lines_processed += 1
@@ -491,10 +494,10 @@ class LogFileParser(object):
                         continue
 
                     if self.process_session(line):
-                        continue    # because it was BEGIN SESSION or END SESSION
+                        continue  # because it was BEGIN SESSION or END SESSION
 
                     if self.__extract_session_info(line):
-                        continue    # because it was about the session info
+                        continue  # because it was about the session info
 
                     filtered_out = True
                     for key, level in self.__filtered_in_levels.items():
@@ -512,7 +515,7 @@ class LogFileParser(object):
                         else:
                             logging.error("Unable to parse log line: %s", line)
             finally:
-                self.process_session('')    # Close the session if not yet done (crashed session?)
+                self.process_session('')  # Close the session if not yet done (crashed session?)
                 text_file.close()
         except Exception:
             logging.exception('')
@@ -521,7 +524,7 @@ class LogFileParser(object):
     def process_session(self, line):
         if 'BEGIN SESSION' in line:
             # 2 open session in a row without a close session implies a session that was terminated abnormaly
-            self.__close_session(crashedsession = self.__session_opened)
+            self.__close_session(crashedsession=self.__session_opened)
             log_line_dict = self.__split_line(line)
             self.__open_session(log_line_dict)
             return True
@@ -531,11 +534,11 @@ class LogFileParser(object):
         else:
             return False
 
-    def __open_session(self, log_dict = None):
+    def __open_session(self, log_dict=None):
         self.__parsed_file.open_session(log_dict)
         self.__session_opened = True
 
-    def __close_session(self, crashedsession = False):
+    def __close_session(self, crashedsession=False):
         self.__parsed_file.close_session(crashedsession)
         self.__session_opened = False
 
@@ -558,9 +561,11 @@ class FolderLogParser(object):
             self.__max_date = datetime(year=2100, month=12, day=31)
             self.__log_file_info_list = []
             self.__parsed_files = []
-            self.__re_exclusions = PreparedExpressionList(kwargs[ParamNames.exclusions]) if ParamNames.exclusions in kwargs.keys() \
+            self.__re_exclusions = PreparedExpressionList(
+                kwargs[ParamNames.exclusions]) if ParamNames.exclusions in kwargs.keys() \
                 else PreparedExpressionList()
-            self.__re_categories = PreparedExpressionList(kwargs[ParamNames.categories]) if ParamNames.categories in kwargs.keys() \
+            self.__re_categories = PreparedExpressionList(
+                kwargs[ParamNames.categories]) if ParamNames.categories in kwargs.keys() \
                 else PreparedExpressionList()
             self.__session_info = kwargs[ParamNames.session_info] if ParamNames.session_info in kwargs.keys() \
                 else DefaultSessionInfo
@@ -607,11 +612,13 @@ class FolderLogParser(object):
     def parse_one_file(self, file_info_to_parse):
         lt = other_helpers.ProcessTimer()
         try:
-            params = {ParamNames.file_info: file_info_to_parse, ParamNames.exclusions: self.__re_exclusions, ParamNames.session_info: self.__session_info,
-                      ParamNames.categories: self.__re_categories, ParamNames.filtered_in_levels: self.__filtered_in_levels,
+            params = {ParamNames.file_info: file_info_to_parse, ParamNames.exclusions: self.__re_exclusions,
+                      ParamNames.session_info: self.__session_info,
+                      ParamNames.categories: self.__re_categories,
+                      ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date}
             log_parser = LogFileParser(**params)
-            self.__processed_file_count  += 1
+            self.__processed_file_count += 1
             parsed_file = log_parser.parsed_file
             if len(parsed_file.sessions) > 0:
                 self.__parsed_files.append(parsed_file)
@@ -630,7 +637,7 @@ class FolderLogParser(object):
                         lt.time_to_str,
                         parsed_file.lines_count))
             if DETAILLED_LOGGING_LEVEL > DETAILLED_LOGGING_FILE:
-                logging.info( "%s", str(parsed_file))
+                logging.info("%s", str(parsed_file))
         except Exception:
             logging.exception('')
             raise
@@ -673,7 +680,8 @@ class FolderLogParser(object):
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(
                     "Processing log files done with a total of {0} files and {1} lines parsed in {2} sec. Output: {3} files with {4} sessions containing a total of {5} lines to process!!!".format(
-                        self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count, self.sessions_count, self.total_lines_to_analyze))
+                        self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count,
+                        self.sessions_count, self.total_lines_to_analyze))
                 time_per_line = pt.time / self.lines_parsed
                 logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                     et.time_to_str,
@@ -688,7 +696,7 @@ class FolderLogParser(object):
         return Headers
 
     # Save the log extraction to a CSV file
-    def save_to_csv_file(self, csv_file_name = None):
+    def save_to_csv_file(self, csv_file_name=None):
         et = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
@@ -704,4 +712,3 @@ class FolderLogParser(object):
         except Exception:
             logging.exception('')
             raise
-

@@ -9,7 +9,7 @@ import sys
 class FileInfo(dict):
     # def initialize(self, root, filename):
     def __init__(self, root, filename):
-        super( FileInfo, self ).__init__()
+        super(FileInfo, self).__init__()
 
         absolute_filename = os.path.join(root, filename)
         self['file_name'] = os.path.basename(absolute_filename)
@@ -76,4 +76,3 @@ def create_folder_if_doest_not_exists(folder_name):
         except Exception as e:
             logging.exception("Unable to find or create the folder " + folder_name, e)
             sys.exit()
-
