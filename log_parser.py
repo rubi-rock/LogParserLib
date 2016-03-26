@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import other_helpers
-from constants import Headers, ParamNames, RowTypes
+from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper
 import csv_helper
@@ -143,6 +143,16 @@ class LogLineSplitter(object):
     def parse_log_line(line):
         return LogLineSplitter.__filter_engine.match(line)
 
+    @staticmethod
+    def get_line_parts(line, sep):
+        broken_line = line.split(sep, 1)
+        return broken_line
+
+    @staticmethod
+    def extract_message(line, sep = ']'):
+        broken_line = line.rsplit(sep, 1)
+        return broken_line[len(broken_line) - 1].strip()
+
 
 #
 # Instance of a log session : between 'BEGIN SESSION' and 'END SESSION'
@@ -175,7 +185,7 @@ class LogSession(object):
     def __str__(self):
         try:
             if len(self.__lines) > 0:
-                return "\n\tSession #{0} - Entries:\n\t\t{1}".format( self.__id, "\n\t\t".join(str(entry) for entry in self.__lines))
+                return "\n\tSession #{0} - {1}\n\tEntries:\n\t\t{2}".format( self.__id, self.message, "\n\t\t".join(str(entry) for entry in self.__lines))
             else:
                 return "\n\tSession #{0} - 0 entries".format( self.__id)
 
@@ -296,7 +306,7 @@ class Log_Line(object):
         self.__data[key] = value
 
     def __str__(self):
-        return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][msg={6}]".format(
+        return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][message={6}]".format(
             self.date, self.time, self.category, self.level, self.module, self.group, self.message)
 
     @property
@@ -392,7 +402,7 @@ class LogFileParser(object):
             self.__lines_processed = 0
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
-            self.__re_session_info = params[ParamNames.session_info]
+            self.__session_info = params[ParamNames.session_info]
             self.__filtered_in_levels = params[ParamNames.filtered_in_levels]
             self.__min_date = params[ParamNames.min_date]
             self.__max_date = params[ParamNames.max_date]
@@ -437,15 +447,13 @@ class LogFileParser(object):
 
     # Extract possible session information
     def __extract_session_info(self, line):
-        info_name = RegExpSet.search_any_expression(line, self.__re_session_info)
-        if info_name is not None:
-            log_dict = self.__split_line(line)
-            info = log_dict.message.split(':')[1].strip()
-            info = {info_name: info}
-            self.parsed_file.add_session_info(info)
-            return True
-        else:
-            return False
+        result = RegExpSet.is_text_containing(line, self.__session_info)
+        if result is not None:
+            message = LogLineSplitter.extract_message(line)
+            message = LogLineSplitter.get_line_parts(message, ':')
+            info = {message[0].strip(): message[1].strip()}
+            self.__add_session_info(info)
+        return None
 
     # Split a log line in its components (date, time, level, [module], message)
     def __split_line(self, line):
@@ -554,8 +562,8 @@ class FolderLogParser(object):
                 else PreparedExpressionList()
             self.__re_categories = PreparedExpressionList(kwargs[ParamNames.categories]) if ParamNames.categories in kwargs.keys() \
                 else PreparedExpressionList()
-            self.__re_session_info = PreparedExpressionList(kwargs[ParamNames.session_info]) if ParamNames.session_info in kwargs.keys() \
-                else PreparedExpressionList()
+            self.__session_info = kwargs[ParamNames.session_info] if ParamNames.session_info in kwargs.keys() \
+                else DefaultSessionInfo
             self.__files_processed = 0
             self.__lines_parsed = 0
         except Exception:
@@ -599,7 +607,7 @@ class FolderLogParser(object):
     def parse_one_file(self, file_info_to_parse):
         lt = other_helpers.ProcessTimer()
         try:
-            params = {ParamNames.file_info: file_info_to_parse, ParamNames.exclusions: self.__re_exclusions, ParamNames.session_info: self.__re_session_info,
+            params = {ParamNames.file_info: file_info_to_parse, ParamNames.exclusions: self.__re_exclusions, ParamNames.session_info: self.__session_info,
                       ParamNames.categories: self.__re_categories, ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date}
             log_parser = LogFileParser(**params)

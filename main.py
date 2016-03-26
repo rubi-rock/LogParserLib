@@ -114,14 +114,6 @@ if __name__ == '__main__':
         '156': 'Pooling Enabled:'
         }
 
-    session_info = {
-        'Version': 'Version :',
-        'Protocol': 'Client Session Protocol',
-        'User': 'User logged :',
-        'Config': 'CurrentConfig',
-        'ConfigGroup': 'Active ConfigGroup:',
-        }
-
     log_levels = {
         '1': 'OPERATING_SYSTEM',
         '2': 'FATAL',
@@ -160,7 +152,8 @@ if __name__ == '__main__':
         }
 
 
-    params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.session_info: session_info}
+
+    params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories}
     flp = log_parser.FolderLogParser(**params)
 
     flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))

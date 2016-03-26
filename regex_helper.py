@@ -93,6 +93,21 @@ class RegExpSet(object):
 
         return result
 
+    @staticmethod
+    def is_text_containing(in_text, from_text_list):
+        for lookup_text in from_text_list:
+            if lookup_text in in_text:
+                return lookup_text
+        return None
+
+    @staticmethod
+    def is_text_begining_with(in_text, from_text_list):
+        for lookup_text in from_text_list.items():
+            if in_text.startswith(lookup_text):
+                return lookup_text
+        return None
+
+
 # Very efficient string to date conversion because it replaces characters (c library in the backend) instead of Python
 # string processing and copy/copy...
 class StringDateHelper(object):
