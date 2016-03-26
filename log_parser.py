@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import other_helpers
-from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo
+from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo, PerformanceTriggerOff
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper
 import csv_helper
@@ -485,7 +485,7 @@ class LogFileParser(object):
 
             logging.info("Processing file: %s", file_name)
             text_file = open(file_name, mode='rt',
-                             encoding='latin-1')  # required to use latin-1 because logs contain french
+                             encoding='latin-1')  # required to use latin-1 because logs contain french (i.e.: çéèà...)
             try:
                 for line in iter(text_file):
                     self.__lines_processed += 1
@@ -513,7 +513,7 @@ class LogFileParser(object):
                                 self.__set_line_category(log_line_dict)
                                 self.__parsed_file.add_log(log_line_dict)
                         else:
-                            logging.error("Unable to parse log line: %s", line)
+                            logging.error("Unable to parse line: %s", line)
             finally:
                 self.process_session('')  # Close the session if not yet done (crashed session?)
                 text_file.close()
@@ -590,10 +590,11 @@ class FolderLogParser(object):
             logging.exception('')
             raise
 
-    def parse(self, root_path, log_levels_filtered_in, min_date, max_date):
+    def parse(self, root_path, log_levels_filtered_in, min_date, max_date, performance_trigger_in_ms = PerformanceTriggerOff):
         try:
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
+            self.__performance_trigger_in_ms = performance_trigger_in_ms
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, "*.log", self.filter_on_date)

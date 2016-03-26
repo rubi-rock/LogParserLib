@@ -1,7 +1,7 @@
 import logging
 import datetime
 import log_parser
-from constants import ParamNames
+from constants import ParamNames, LogLevels
 from other_helpers import LogUtility    # keep it even if it seems unused, it set up the logging automatically
 
 '''
@@ -115,14 +115,14 @@ if __name__ == '__main__':
         }
 
     log_levels = {
-        '1': 'OPERATING_SYSTEM',
-        '2': 'FATAL',
-        '3': 'EXCEPTION_TRACK',
-        '4': 'LEAK',
-        #'5': 'STATISTIC',
-        '10': 'SYST HIGH',
-        '11': 'SYST MEDIUM',
-        '12': 'SYST LOW'
+        '1': LogLevels.OPERATING_SYSTEM,
+        '2': LogLevels.FATAL,
+        '3': LogLevels.EXCEPTION_TRACK,
+        '4': LogLevels.LEAK,
+        #'5': LogLevels.STATISTIC,
+        '10': LogLevels.SYST_HIGH,
+        '11': LogLevels.SYST_MEDIUM,
+        '12': LogLevels.SYST_LOW
         }
 
     categories = {

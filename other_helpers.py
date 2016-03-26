@@ -190,7 +190,7 @@ class ListEnum(list):
         for name in enum_list:
             self.append(name)
         # create the properties
-        [object.__setattr__(self, name, name) for name in enum_list]
+        [object.__setattr__(self, name.replace(' ', '_'), name) for name in enum_list]
 
 
 # HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!! HACK!! HACK!!! HACK!!!

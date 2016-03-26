@@ -1,6 +1,12 @@
 from other_helpers import ListEnum
 
 #
+#
+#
+LogLevels = ListEnum(
+    ['OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'STATISTIC', 'SYST HIGH', 'SYST MEDIUM', 'SYST LOW'])
+
+#
 # Enumarates columns manipulated by the log parser for each session or log line
 #
 Headers = ListEnum(
@@ -26,3 +32,7 @@ DefaultSessionInfo = [
     'CurrentConfig',
     'Active ConfigGroup:'
 ]
+
+# Default performance trigger in ms: when none it ignores statistics, else it looks at it and keep only what is higher
+# than specified
+PerformanceTriggerOff = None
