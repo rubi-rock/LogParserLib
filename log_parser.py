@@ -437,6 +437,7 @@ class LogFileParser(object):
     def set_line_category(self, line_dict):
         category = RegExpSet.search_any_expression(line_dict.msg, self.__re_categories)
         if category is not None:
+            category = category.strip("0123456789.")
             line_dict.set_value(Headers.category, category)
 
 

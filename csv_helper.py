@@ -26,7 +26,7 @@ def WriteDictToCSV(log_folder_parser, csv_file_name = None):
 
         headers = log_folder_parser.csv_header
         with open(csv_file_name, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL, ieldnames=log_folder_parser.csv_header)
+            writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL, fieldnames=log_folder_parser.csv_header)
             writer.writeheader()
 
             # dump the file
@@ -49,16 +49,3 @@ def WriteDictToCSV(log_folder_parser, csv_file_name = None):
     except Exception:
         logging.exception('')
     return
-
-'''
-
-            for values in d
-            writer.writerow({'first_name': 'Baked', 'last_name': 'Beans'})
-    writer.writerow({'first_name': 'Lovely', 'last_name': 'Spam'})
-    writer.writerow({'first_name': 'Wonderful', 'last_name': 'Spam'})
-            writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
-            writer.writeheader()
-            for data in dict_data:
-                writer.writerow(data)
-
-'''
