@@ -15,4 +15,4 @@ RowTypes = ListEnum(['file', 'session', 'line'])
 #
 # Enumerates parameter names used in dict or kwargs to pass from a method/function to another one
 #
-ParamNames = ListEnum(['file_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date'])
+ParamNames = ListEnum(['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date'])

@@ -1,6 +1,7 @@
 import logging
 import datetime
 import log_parser
+from constants import ParamNames
 from other_helpers import LogUtility    # keep it even if it seems unused, it set up the logging automatically
 
 '''
@@ -97,6 +98,7 @@ if __name__ == '__main__':
         '45': 'program: ',
         '46': 'REGEX=^Config\:',
         '47': '* Context * ',
+        '48': 'Active ConfigGroup:',
         # EXTENSIONS EXCLUSIONS
         '100': 'REGEX=\[TXMLDataRecordProviderTool::TXMLDataRecordProviderTool.Create\] Module not found : "(.*)\\bin\\sqimDossierAdapterDispense\.dll"',
         '101': '//Concurrent access',
@@ -113,14 +115,11 @@ if __name__ == '__main__':
         }
 
     session_info = {
-        '1': 'REGEX=Version : [0-9\.]{12}',
-        '2': 'Client Session Protocol',
-        '3': 'User logged',
-        '4': 'CurrentConfig',
-        '5': 'Server Name',
-        '6': 'Database:',
-        '7': 'program: ',
-        '8': 'REGEX=^Config\:'
+        'Version': 'Version :',
+        'Protocol': 'Client Session Protocol',
+        'User': 'User logged :',
+        'Config': 'CurrentConfig',
+        'ConfigGroup': 'Active ConfigGroup:',
         }
 
     log_levels = {
@@ -161,11 +160,12 @@ if __name__ == '__main__':
         }
 
 
-    params = {'exclusions': exclusions, 'categories': categories}
+    params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.session_info: session_info}
     flp = log_parser.FolderLogParser(**params)
-    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
+
+    #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
     #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
-    #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
+    flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/LBlundell", log_levels, datetime.datetime(year=2016, month=3, day=1), datetime.datetime(year=2016, month=3, day=31))
     flp.save_to_csv_file()

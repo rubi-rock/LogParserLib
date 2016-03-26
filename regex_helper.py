@@ -2,6 +2,7 @@ import logging
 import uuid
 import re
 import datetime
+import dateutil.parser
 
 
 class PreparedExpressionList(dict):
@@ -95,11 +96,20 @@ class RegExpSet(object):
 # Very efficient string to date conversion because it replaces characters (c library in the backend) instead of Python
 # string processing and copy/copy...
 class StringDateHelper(object):
-    __intab = '/-: '
-    __outtab = ',,,,'
+    __intab = '/-: .'
+    __outtab = ',,,,,'
     __trantab = str.maketrans(__intab, __outtab)
 
     @staticmethod
     def str_iso_to_date(text):
-        value_list = text.translate(StringDateHelper.__trantab)
-        return datetime.datetime(*map(int, value_list))
+        dt = None
+        try:
+            value_list = text.translate(StringDateHelper.__trantab)
+            dt = datetime.datetime(*map(int, value_list))
+        except:
+            try:
+                text = text[::-1].replace(":", ".", 1)[::-1]
+                dt = dateutil.parser.parse(text)
+            except:
+                raise
+        return dt
