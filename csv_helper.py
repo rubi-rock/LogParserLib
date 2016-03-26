@@ -2,7 +2,7 @@ import csv
 import logging
 import os
 from datetime import datetime
-import log_parser
+from constants import Headers
 
 '''
 # read a CSV file and load it in a dictonary
@@ -31,6 +31,11 @@ def WriteDictToCSV(log_folder_parser, csv_file_name = None):
 
             for parsed_file in log_folder_parser.parsed_files:
                 writer.writerow(parsed_file.as_csv_row)
+                file_name = parsed_file.parsed_file_info.fullname
+                for session in parsed_file.sessions:
+                    row = session.as_csv_row
+                    row[Headers.file] = file_name
+                    writer.writerow(row)
 
         return csv_file_name
     except Exception:

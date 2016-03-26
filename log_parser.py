@@ -213,6 +213,16 @@ class LogSession(object):
     def has_crashed(self):
         return self.__has_crashed
 
+    @property
+    def as_csv_row(self):
+        row = dict()
+        row[Headers.type] = RowTypes.session
+        row[Headers.date] = self.__date
+        row[Headers.time] = self.__time
+        row[Headers.session] = self.__id
+        row[Headers.has_crashed] = self.has_crashed
+        row[Headers.module] = self.__module
+        return row
 
 #
 # Parsed log line : date, time, level, module, message... in a structured way. It saves memory because a dict has to
