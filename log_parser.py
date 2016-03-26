@@ -265,7 +265,7 @@ class Log_Line(object):
         value = self.__data[Headers.date]
         if type(value) is not date:
             try:
-                dt = StringDateHelper.str_iso_to_date(value)
+                dt = StringDateHelper.str_iso_to_datetime(value)
             except:
                 dt = UNPARSABLE_DATETIME
             self.__data[Headers.date] = dt.date()

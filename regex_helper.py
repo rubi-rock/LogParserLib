@@ -217,7 +217,7 @@ class StringDateHelper(object):
         return dt
 
     @staticmethod
-    def str_iso_to_date(text):
+    def str_iso_to_datetime(text):
         dt = None
         try:
             dt = StringDateHelper.__str_to_date_using_map(text)
