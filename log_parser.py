@@ -232,12 +232,13 @@ class Log_Line(object):
     def __init__(self, line_dict):
         self.__data = line_dict
         self.__fixe_date()
+        self.__data[Headers.type] = RowTypes.line
 
     def __fixe_date(self):
         value = self.__data[Headers.date]
         if type(value) is not datetime.date:
             try:
-                dt = StringDateHelper.str_iso_to_date(value)    # very efficient x2 faster than dateutil.parser.parse
+                dt = StringDateHelper.str_iso_to_date(value)    # very efficient: x2+ faster than dateutil.parser.parse
             except:
                 try:
                     value = value[::-1].replace(":",".",1)[::-1]
@@ -287,6 +288,10 @@ class Log_Line(object):
     def __str__(self):
         return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][msg={6}]".format(
             self.date, self.time, self.category, self.level, self.module, self.group, self.msg)
+
+    @property
+    def as_csv_row(self):
+        return self.__data
 
 
 #
