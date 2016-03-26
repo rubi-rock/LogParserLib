@@ -115,13 +115,17 @@ import csv_helper
         WARNING: the same recommendations applies for the categorization than for the filtering about the memory and CPU
         =======  consumption
 
+    Session Information:
+    --------------------
+    Found from multiple lines of each session, this information is collected and saved in the 'message' field of the
+    session to provide context such as the user ID, the version, the config groups...
 '''
 
 # Change the log level of DETAILLED_LOGGING_LEVEL to put more detail on the console (logging.info)
 DETAILLED_LOGGING_NONE = 0          # Nothing
 DETAILLED_LOGGING_FILE = 1          # Statis about the file only
 DETAILLED_LOGGING_SESSION = 2       # details of the file (sessions & lines preserved)
-DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_SESSION
+DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_FILE
 
 # Date used when the date and time from the log line cannot be parsed
 UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
@@ -220,6 +224,10 @@ class LogSession(object):
         return self.__has_crashed
 
     @property
+    def message(self):
+        return '[{0}]'.format(']['.join("{0}={1}".format(key, value) for key, value in self.__info.items()))
+
+    @property
     def as_csv_row(self):
         row = dict()
         row[Headers.type] = RowTypes.session
@@ -228,7 +236,7 @@ class LogSession(object):
         row[Headers.session] = self.__id
         row[Headers.has_crashed] = self.has_crashed
         row[Headers.module] = self.__module
-        row[Headers.message] = '[{0}]'.format(']['.join("{0}={1}".format(key, value) for key, value in self.__info.items()))
+        row[Headers.message] = self.message
         return row
 
 #
@@ -455,7 +463,7 @@ class LogFileParser(object):
     def __set_line_category(self, line_dict):
         category = RegExpSet.search_any_expression(line_dict.message, self.__re_categories)
         if category is not None:
-            category = category.strip("0123456789.")
+            category = category.strip("0123456789.")    # remove numbers before category names (e.g. 71.EXCEPTION)
             line_dict.set_value(Headers.category, category)
 
     # Parse one log file based on the exclusions (logs to ignore) and categories (which category the log belongs to).

@@ -127,7 +127,7 @@ if __name__ == '__main__':
         '2': 'FATAL',
         '3': 'EXCEPTION_TRACK',
         '4': 'LEAK',
-        '5': 'STATISTIC',
+        #'5': 'STATISTIC',
         '10': 'SYST HIGH',
         '11': 'SYST MEDIUM',
         '12': 'SYST LOW'
@@ -163,9 +163,9 @@ if __name__ == '__main__':
     params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.session_info: session_info}
     flp = log_parser.FolderLogParser(**params)
 
-    #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
+    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
     #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
-    flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
+    #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/LBlundell", log_levels, datetime.datetime(year=2016, month=3, day=1), datetime.datetime(year=2016, month=3, day=31))
     flp.save_to_csv_file()
