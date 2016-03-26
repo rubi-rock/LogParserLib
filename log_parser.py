@@ -603,7 +603,15 @@ class FolderLogParser(object):
             # Just ignore the MAPGEN files, their format is not as expected (Purkinje Standard Log Format as implemented
             # in debug tools to be compliant in 2.0 with the log format from 1.x at that time). Anyway all logs are now
             # (5.13+) in the same file than the running application instead of a separate log file
-            if log_file_info_to_filter.file_name.startswith('mapgen.'):
+            #
+            # Same thing for other files like LogInstallDB, ... they do not follow the standard, there is no ',' after
+            # the time...
+            if log_file_info_to_filter.file_name.startswith('mapgen.')\
+                    or log_file_info_to_filter.file_name == 'LogBuildDBImage.log' \
+                    or log_file_info_to_filter.file_name == 'Installed.log' \
+                    or log_file_info_to_filter.file_name == 'LogInstallDB.log' \
+                    or log_file_info_to_filter.file_name == 'LogSetup.log' \
+                    or log_file_info_to_filter.file_name == 'BuildDBImage.log':
                 return False
 
             # keeps only files that are in the requested date range - be careful: logs changed recently can contain logs
