@@ -131,6 +131,17 @@ class LogLineSplitter(object):
         broken_line = line.rsplit(sep, 1)
         return broken_line[len(broken_line) - 1].strip()
 
+    @staticmethod
+    def extract_time_measure_from_message(message):
+        try:
+            if message.rstrip().endswith('!!!!!!! sec.'):
+                time_str = str(message.rsplit(': ', 1)[1].split(' ', 1)[0])
+                time_float = float(time_str) * 1000 # sec => ms
+                return time_float
+        except:
+            pass
+        return 0
+
     # Low level function that is by default faster than a regular expression, which is worst here because MAPGEN logs
     # do not follow the standard log format (e.g.: mapgen.dci.exe) and this is worst when injected in an application
     # log file because it's not well integrate and there are 2 levels in lone log line:

@@ -410,6 +410,7 @@ class LogFileParser(object):
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
             self.__session_info = params[ParamNames.session_info]
+            self.performance_trigger_in_ms = params[ParamNames.performance_trigger_in_ms]
             self.__filtered_in_levels = params[ParamNames.filtered_in_levels]
             self.__min_date = params[ParamNames.min_date]
             self.__max_date = params[ParamNames.max_date]
@@ -514,6 +515,11 @@ class LogFileParser(object):
                     if self.__extract_session_info(log_line_dict):
                         continue    # because it was about the session info
 
+                    # Here process the log performance trigger
+                    if self.performance_trigger_in_ms is not None:
+                        if self.__track_potential_perofrmance_issue(log_line_dict):
+                            continue
+
                     filtered_out = True
                     for key, level in self.__filtered_in_levels.items():
                         if level in line:
@@ -564,6 +570,17 @@ class LogFileParser(object):
     def __set_session_termination_reason(self, reason):
         self.parsed_file.set_termination_reason(reason)
 
+    def __track_potential_perofrmance_issue(self, log_line_dict):
+        if self.performance_trigger_in_ms is not None:
+            if log_line_dict.level == 'STATISTIC':
+                time_value = LogLineSplitter.extract_time_measure_from_message(log_line_dict.message)
+                if time_value > self.performance_trigger_in_ms:
+                    log_line_dict.set_value(Headers.category, 'PERFORMANCE')
+                    self.parsed_file.add_log(log_line_dict)
+                    return True
+        return False
+
+
 #
 # Walk through a folder and its sub folders to find and analyse log files
 #
@@ -579,6 +596,8 @@ class FolderLogParser(object):
             self.__max_date = datetime(year=2100, month=12, day=31)
             self.__log_file_info_list = []
             self.__parsed_files = []
+            self.__performance_trigger_in_ms = kwargs[ParamNames.performance_trigger_in_ms] if ParamNames.performance_trigger_in_ms in kwargs.keys() \
+                else PerformanceTriggerOff
             self.__re_exclusions = PreparedExpressionList(
                 kwargs[ParamNames.exclusions]) if ParamNames.exclusions in kwargs.keys() \
                 else PreparedExpressionList()
@@ -624,11 +643,10 @@ class FolderLogParser(object):
             logging.exception('')
             raise
 
-    def parse(self, root_path, log_levels_filtered_in, min_date, max_date, performance_trigger_in_ms = PerformanceTriggerOff):
+    def parse(self, root_path, log_levels_filtered_in, min_date, max_date):
         try:
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
-            self.__performance_trigger_in_ms = performance_trigger_in_ms
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, "*.log", self.filter_on_date)
@@ -650,6 +668,7 @@ class FolderLogParser(object):
             params = {ParamNames.file_info: file_info_to_parse, ParamNames.exclusions: self.__re_exclusions,
                       ParamNames.session_info: self.__session_info,
                       ParamNames.categories: self.__re_categories,
+                      ParamNames.performance_trigger_in_ms: self.__performance_trigger_in_ms,
                       ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date}
             log_parser = LogFileParser(**params)
