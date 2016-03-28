@@ -1,0 +1,81 @@
+                            How to create a UI for Python, we use Qt5.
+
+
+Qt can build a full application - multi platform by itself - but the parsing was already done with Python
+therefore Qt is used only for the UI, not fpr the logic. This also allow to change the parsing code easily without
+an IDE and without compilation.
+
+To do it, just convert the UI file product with Qt creator (or Qt Designer) to a Python file:
+        $ pyuic5 -x mainwindow.ui -o LogParser.py
+
+Then branch the code (event or slots) created in python to drive the user interface built with Qt that has been
+converted to Python. Refer to PyQt documentation to do it.
+
+Note that it is require to install:
+	. Python 3 - that the version of the parser :
+	. Qt5 full package that's the version of the user interface creator
+	. PyQt5 to let Python interface with Qt framework
+
+For OSX users, it's a bit more complex - I assume - than for windows user to install it. Here is the receipe I used:
+
+    Download
+
+        . Python 3+
+        . XCode 5.1.1+ plus XCode command line tool
+        . Qt5 Package - includes the QT Creator or disigner application
+        . Qt libraries 5.2.1
+        . SIP 4.15.5
+        . PyQt 5.2.1
+
+    installation
+
+    	. Python3 : download and install the regular version - there is a .dmg available, you can also use brew:
+	        $ brew install python3
+        . install xcode
+        . install the Command Line Tools:
+            $ xcode-select --install
+    	. Install Qt5 : the full package is available at http://www.qt.io/download
+        . install Qt libraries (qt-opensource-mac-x64-clang-5.2.1.dmg)
+        . install python 3.4+
+        . unzip and compile SIP source code file
+            From the unzipped folder
+                python3 configure.py
+                make
+                sudo make install
+                sudo make clean
+
+        . unzip and compile SIP and PyQt
+            $ python3 configure.py --qmake ~/Qt5.2.1/5.2.1/clang_64/bin/qmake
+            $ make
+            $ sudo make install
+            $ sudo make clean
+            $ python3 -c "import PyQt5"
+
+            Here it is very important to indicate --with-python3 because OSX uses python 2.6 or 2.7 by default at this time and
+            it is very risky to set the default Python interpreter to version 3 by default because it could create issues for
+            modules using python natively in OSX.
+
+        . Install PyQt5:
+            $ brew install PyQt5 --with-python3
+
+            Here it is very important to indicate --with-python3 because OSX uses python 2.6 or 2.7 by default at this
+            time and it is very risky to set the default Python interpreter to version 3 by default because it could
+            create issues for modules using python natively in OSX.
+
+        . Build PyQt5 labrary manually - yes also because it will install the tool - that's fine - but part of the
+          library won't be available from python3:
+            - download the source from the web, unzip it
+            - build and install PyQt5 from the folder where you unzipped the source
+                $ python3 configure.py --qmake /usr/local/opt/qt5/bin/qmake
+                $ make
+                $ make install
+
+          Here it is important to do it with python3, also because this is not the default python version then you must
+          specify where is qt5 installed, the qmake is under Qt5/bin. This was my path, you can find it like this:
+                $ cd /usr/local/opt/qt5/$VERSION_OF_QT/bin/
+                $ pwd
+                    /usr/local/opt/qt5/bin
+
+
+
+
