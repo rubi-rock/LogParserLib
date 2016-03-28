@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/Arrow-double-down-icon_32.png</file>
+        <file>icons/Arrow-double-up-icon_32.png</file>
+        <file>icons/Arrow-down-icon_32.png</file>
+        <file>icons/Arrow-up-icon_32.png</file>
+        <file>icons/Categories-preferences-system-icon_32.png</file>
+        <file>icons/delete_24.png</file>
+        <file>icons/folder_search_32.png</file>
+        <file>icons/shutdown_32.png</file>
+        <file>icons/trash-icon_32.png</file>
+        <file>icons/bin-red-full-icon_32.png</file>
+        <file>icons/log_oxigen_32.png</file>
+    </qresource>
+</RCC>
