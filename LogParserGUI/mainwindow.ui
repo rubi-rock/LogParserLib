@@ -26,7 +26,7 @@
    <string>Log Parser V5</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="icons.qrc">
     <normaloff>:/icons/log_oxigen_32.png</normaloff>:/icons/log_oxigen_32.png</iconset>
   </property>
   <property name="locale">
@@ -43,7 +43,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_Parameters">
        <attribute name="title">
@@ -58,7 +58,7 @@
              <enum>QFrame::NoFrame</enum>
             </property>
             <property name="text">
-             <string>Folder:</string>
+             <string>Path:</string>
             </property>
            </widget>
           </item>
@@ -125,13 +125,6 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="5">
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>(discard logs out of this range)</string>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
@@ -167,14 +160,14 @@
           <item>
            <widget class="QPushButton" name="push_Collapse">
             <property name="text">
-             <string>Collapse Tree</string>
+             <string>Collapse</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="push_Expand">
             <property name="text">
-             <string>Expand Tree</string>
+             <string>Expand</string>
             </property>
            </widget>
           </item>
@@ -540,6 +533,7 @@
        </layout>
        <zorder></zorder>
        <zorder></zorder>
+       <zorder>horizontalLayoutWidget</zorder>
       </widget>
      </widget>
     </item>

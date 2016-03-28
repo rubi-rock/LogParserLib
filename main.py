@@ -4,6 +4,13 @@ import log_parser
 from constants import ParamNames, LogLevels
 from other_helpers import LogUtility    # keep it even if it seems unused, it set up the logging automatically
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit
+from PyQt5.QtWidgets import QTextEdit, QWidget, QDialog, QApplication
+import LogParserMainWindow
+
+
 '''
 def filter_function(lfi):
     return "Purkinje" in lfi.filename
@@ -28,6 +35,7 @@ class FilterClass(object):
 
 if __name__ == '__main__':
     logging.info("Start")
+
 
     '''
     print( LogLineParserFactory.get_parser_list())
@@ -163,3 +171,5 @@ if __name__ == '__main__':
     #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/LBlundell", log_levels, datetime.datetime(year=2016, month=3, day=1), datetime.datetime(year=2016, month=3, day=31))
     flp.save_to_csv_file()
+
+    LogParserMainWindow.ShowMainWindow()

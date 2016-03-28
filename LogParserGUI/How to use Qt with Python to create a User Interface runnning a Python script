@@ -8,6 +8,9 @@ an IDE and without compilation.
 To do it, just convert the UI file product with Qt creator (or Qt Designer) to a Python file:
         $ pyuic5 -x mainwindow.ui -o LogParser.py
 
+You'll also need the application icons, therefore you must generate a .rc file from the .qrc file:
+        $ pyrcc5 -o icons_rc.py icons.qrc
+
 Then branch the code (event or slots) created in python to drive the user interface built with Qt that has been
 converted to Python. Refer to PyQt documentation to do it.
 
@@ -26,6 +29,7 @@ For OSX users, it's a bit more complex - I assume - than for windows user to ins
         . Qt libraries 5.2.1
         . SIP 4.15.5
         . PyQt 5.2.1
+        . PySide
 
     installation
 
@@ -37,6 +41,7 @@ For OSX users, it's a bit more complex - I assume - than for windows user to ins
     	. Install Qt5 : the full package is available at http://www.qt.io/download
         . install Qt libraries (qt-opensource-mac-x64-clang-5.2.1.dmg)
         . install python 3.4+
+
         . unzip and compile SIP source code file
             From the unzipped folder
                 python3 configure.py
@@ -76,6 +81,7 @@ For OSX users, it's a bit more complex - I assume - than for windows user to ins
                 $ pwd
                     /usr/local/opt/qt5/bin
 
-
+        . Install PySide:
+            $ brew install pyside
 
 
