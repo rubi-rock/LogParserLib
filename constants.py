@@ -9,11 +9,13 @@ LogLevels = ListEnum(
         'MESSAGES', 'UNKNOWN',
         # Map log levels
         'SYST HIGH', 'SYST MEDIUM', 'SYST LOW', 'SYST', 'DEBUG'])   # Mapgen also has a LOG level, we don't duplicate it
+ErrorLogLevels = 'OPERATING_SYSTEM|FATAL|EXCEPTION_TRACK|LEAK|STATISTIC|SYST HIGH|SYST MEDIUM'
+
 #
 # Enumarates columns manipulated by the log parser for each session or log line
 #
 Headers = ListEnum(
-    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message'])
+    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message', 'context'])
 
 #
 # Enumerates the row type when saving/loading to/from a CSV file
@@ -24,7 +26,7 @@ RowTypes = ListEnum(['file', 'session', 'line'])
 # Enumerates parameter names used in dict or kwargs to pass from a method/function to another one
 #
 ParamNames = ListEnum(
-    ['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date', 'performance_trigger_in_ms'])
+    ['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date', 'performance_trigger_in_ms', 'provide_context'])
 
 # Be careful: this one does not use regular expression nor upper or any facilitator for performance reasons.
 # Therefore the text we are looking for must be exactly this one and with this case.

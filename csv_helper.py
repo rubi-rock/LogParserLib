@@ -45,6 +45,8 @@ def WriteDictToCSV(log_folder_parser, csv_file_name=None):
                     for line in session.lines:
                         row = line.as_csv_row
                         row[Headers.file] = file_name
+                        row[Headers.message] = row[Headers.message].encode('latin-1')       # because of the french text
+                        row[Headers.context] = row[Headers.context].encode('latin-1')       # because of the french text
                         row[Headers.session] = session.session_id
                         writer.writerow(row)
 

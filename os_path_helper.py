@@ -37,17 +37,16 @@ class FileInfo(dict):
 
 
 class FileSeeker(object):
-    __logfile_pattern = "*.*"
+    __default_pattern = "*.*"
 
     @staticmethod
-    def walk(root_path, patterns=None):
-        if (patterns is None) or (patterns == ""):
-            patterns = FileSeeker.__logfile_pattern
+    def walk(root_path, extensions=None):
         file_list = []
         for root, dirs, files in os.walk(root_path):
-            for filename in fnmatch.filter(files, patterns):
-                lfi = FileInfo(root, filename)
-                file_list.append(lfi)
+            for ext in extensions:
+                for filename in fnmatch.filter(files, ext):
+                    lfi = FileInfo(root, filename)
+                    file_list.append(lfi)
         return file_list
 
     '''
@@ -59,8 +58,8 @@ class FileSeeker(object):
     '''
 
     @staticmethod
-    def walk_and_filter_in(root_path, patterns=None, filter_callback=None):
-        file_list = FileSeeker.walk(root_path, patterns)
+    def walk_and_filter_in(root_path, extensions=None, filter_callback=None):
+        file_list = FileSeeker.walk(root_path, extensions)
         if inspect.ismethod(filter_callback) or inspect.isfunction(filter_callback):
             result = [x for x in file_list if filter_callback(x)]
         else:

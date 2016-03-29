@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import other_helpers
-from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo, PerformanceTriggerOff, LogLevels
+from constants import Headers, ParamNames, RowTypes, DefaultSessionInfo, PerformanceTriggerOff, LogLevels, ErrorLogLevels
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, StringDateHelper, LogLineSplitter
 import csv_helper
@@ -132,6 +132,34 @@ DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_FILE
 UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
 
 
+class LogContext(list):
+    def __init__(self, max_lines = 5):
+        self.__limit = max_lines
+
+    def __str__(self):
+        return ' ---- '.join([str(log) for log in self])
+
+    def __clear(self):
+        while len(self) > self.__limit:
+            if len(self)  > 0:
+                self.pop(0)
+
+    def append(self, p_object):
+        self.__clear()
+        super(LogContext, self).append(p_object)
+
+    @property
+    def limit(self):
+        return self.__limit
+
+    @limit.setter
+    def limit(self, value):
+        self.__limit = value
+        self.__clear()
+
+log_context = LogContext()
+
+
 #
 # Instance of a log session : between 'BEGIN SESSION' and 'END SESSION'
 #
@@ -172,6 +200,10 @@ class LogSession(object):
             logging.exception('')
             raise
 
+    # Add a filtered in log line
+    def add_log(self, log_dict):
+        self.__lines.append(log_dict)
+
     # Add an entry to the session to indicate when the session did not terminate properly (killed session, crash...)
     def add_crashed_session_log(self):
         if len(self.lines) > 0:
@@ -183,16 +215,19 @@ class LogSession(object):
             crash_log_line = Log_Line(
                 {Headers.module: self.__module, Headers.date: self.__date, Headers.time: self.__time})
 
+        self.__has_crashed = True
+        crash_log_line.set_value(Headers.has_crashed, self.__has_crashed )
+
         if self.__termination_reason is not None:
             crash_log_line.set_value(Headers.message, self.__termination_reason)
             crash_log_line.set_value(Headers.category, 'KILLED')
         else:
             crash_log_line.set_value(Headers.message, 'SESSION TERMINATED ABNORMALLY - REASON UNKNOWN (log "END SESSION" not found)')
             crash_log_line.set_value(Headers.category, 'CRASHED')
+
         crash_log_line.set_value(Headers.level, LogLevels.EXCEPTION_TRACK)
         crash_log_line.set_value(Headers.group, 99999)  # Special group for the crashed indicator
-        self.lines.append(crash_log_line)
-        self.__has_crashed = True
+        self.add_log(crash_log_line)
 
     # Add information to the session (version, user, configgroup...)
     def add_session_info(self, info_dict):
@@ -253,8 +288,10 @@ class Log_Line(object):
     # Constructor
     def __init__(self, line_dict):
         self.__data = line_dict
-        self.__fixe_date()
+        self.__data[Headers.group] = 0
         self.__data[Headers.type] = RowTypes.line
+        self.__data[Headers.context] = str(log_context)
+        self.__fixe_date()
 
     # Fix the date format. There are several cases:
     #   . the date is already a date type - fine don't fix anything
@@ -271,7 +308,6 @@ class Log_Line(object):
             self.__data[Headers.date] = dt.date()
             self.__data[Headers.time] = dt.time()
 
-        self.__data[Headers.group] = 0
 
     @property
     def date(self):
@@ -294,6 +330,13 @@ class Log_Line(object):
         return self.__data[Headers.message]
 
     @property
+    def context(self):
+        if Headers.context in self.__data.keys():
+            return self.__data[Headers.context]
+        else:
+            return None
+
+    @property
     def group(self):
         return self.__data[Headers.group]
 
@@ -308,8 +351,12 @@ class Log_Line(object):
         self.__data[key] = value
 
     def __str__(self):
-        return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][message={6}]".format(
-            self.date, self.time, self.category, self.level, self.module, self.group, self.message)
+        if Headers.context in self.__data.keys():
+            return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][message={6}][context={7}]".format(
+                self.date, self.time, self.category, self.level, self.module, self.group, self.message, self.__data[Headers.context])
+        else:
+            return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][message={6}]".format(
+                self.date, self.time, self.category, self.level, self.module, self.group, self.message)
 
     @property
     def as_csv_row(self):
@@ -326,6 +373,7 @@ class ParsedLogFile(object):
             self.__file_info = file_to_parse_info
             self.__sessions = []
             self.__current_session = None
+
         except Exception:
             logging.exception('')
             raise
@@ -359,7 +407,7 @@ class ParsedLogFile(object):
             if self.__current_session is None:
                 self.open_session()
 
-            self.__current_session.lines.append(log_dict)
+            self.__current_session.add_log(log_dict)
         except Exception:
             logging.exception('')
             raise
@@ -374,6 +422,7 @@ class ParsedLogFile(object):
         # document a crashed session (application crash, process killed)
         if crashedsession:
             self.__current_session.add_crashed_session_log()
+
         # flush an empty session
         if self.__current_session is not None and len(self.__current_session.lines) == 0:
             self.__sessions.remove(self.__current_session)
@@ -406,11 +455,12 @@ class LogFileParser(object):
     # Constructor
     def __init__(self, **params):
         try:
+            log_context.clear()
             self.__lines_processed = 0
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
             self.__session_info = params[ParamNames.session_info]
-            self.performance_trigger_in_ms = params[ParamNames.performance_trigger_in_ms]
+            self.__performance_trigger_in_ms = params[ParamNames.performance_trigger_in_ms]
             self.__filtered_in_levels = params[ParamNames.filtered_in_levels]
             self.__min_date = params[ParamNames.min_date]
             self.__max_date = params[ParamNames.max_date]
@@ -509,6 +559,8 @@ class LogFileParser(object):
                     if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
                         continue    # because it's not in the date range to process
 
+                    log_context.append(line)
+
                     if self.__process_session(log_line_dict):
                         continue    # because it was BEGIN SESSION or END SESSION
 
@@ -516,14 +568,17 @@ class LogFileParser(object):
                         continue    # because it was about the session info
 
                     # Here process the log performance trigger
-                    if self.performance_trigger_in_ms is not None:
-                        if self.__track_potential_perofrmance_issue(log_line_dict):
+                    if self.__performance_trigger_in_ms  is not None:
+                        if self.__track_potential_performance_issue(log_line_dict):
                             continue
 
                     filtered_out = True
                     for key, level in self.__filtered_in_levels.items():
                         if level in line:
                             filtered_out = False
+
+                    # If not added when it was triggered as an Exception or a new session then it must be part of the
+                    # context
                     if filtered_out:
                         continue
 
@@ -570,11 +625,11 @@ class LogFileParser(object):
     def __set_session_termination_reason(self, reason):
         self.parsed_file.set_termination_reason(reason)
 
-    def __track_potential_perofrmance_issue(self, log_line_dict):
-        if self.performance_trigger_in_ms is not None:
+    def __track_potential_performance_issue(self, log_line_dict):
+        if self.__performance_trigger_in_ms is not None:
             if log_line_dict.level == 'STATISTIC':
                 time_value = LogLineSplitter.extract_time_measure_from_message(log_line_dict.message)
-                if time_value > self.performance_trigger_in_ms:
+                if time_value > self.__performance_trigger_in_ms:
                     log_line_dict.set_value(Headers.category, 'PERFORMANCE')
                     self.parsed_file.add_log(log_line_dict)
                     return True
@@ -591,6 +646,11 @@ class FolderLogParser(object):
     # @measure
     def __init__(self, **kwargs):
         try:
+            if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
+                log_context.limit = kwargs[ParamNames.provide_context]
+            else:
+                log_context.limit = 0
+
             self.__processed_file_count = 0
             self.__min_date = datetime(year=2015, month=1, day=1)
             self.__max_date = datetime(year=2100, month=12, day=31)
@@ -649,7 +709,7 @@ class FolderLogParser(object):
             self.prepare_levels()
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
-            self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, "*.log", self.filter_on_date)
+            self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log', '*.log.bak'], self.filter_on_date)
             logging.info("%s files found:", str(len(self.__log_file_info_list)))
             for log_file in self.__log_file_info_list:
                 logging.info(log_file.fullname)
@@ -762,7 +822,7 @@ class FolderLogParser(object):
                 logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                     et.time_to_str,
                     time_per_line * 1000,
-                    round(60 * self.total_lines_to_analyze / pt.time)))
+                    round(60 * self.total_lines_to_analyze / (pt.time if pt.time > 0 else 1))))
         except Exception:
             logging.exception('')
             raise
