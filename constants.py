@@ -5,7 +5,7 @@ from other_helpers import ListEnum
 #
 LogLevels = ListEnum(
     [  # Standard log levels
-        'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'TRACE', 'DUMP',
+        'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'ACTION', 'TRACE', 'DUMP',
         'MESSAGES', 'UNKNOWN',
         # Map log levels
         'SYST HIGH', 'SYST MEDIUM', 'SYST LOW', 'SYST', 'DEBUG'])   # Mapgen also has a LOG level, we don't duplicate it
@@ -128,3 +128,6 @@ DEFAULT_PERFORMANCE_TRIGGER_IN_MS = 3500
 
 # Default save:
 SAVE_FILE_BY_FILE = True
+
+# DEfault context lengyh (line amount)
+DEFAULT_CONTEXT_LENGTH = 20

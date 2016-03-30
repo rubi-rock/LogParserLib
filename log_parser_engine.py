@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import os_path_helper
 import other_helpers
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, \
-    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE
+    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH
 from log_parser_objects import log_context, Log_Line, ParsedLogFile
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
@@ -295,6 +295,8 @@ class LogFileParser(object):
                 self.__open_session(log_line_dict)
                 return True
             elif log_line_dict is None or log_line_dict.message.startswith('END SESSION'):
+                if not self.__session_opened:
+                    self.add_misaligned_ended_session(log_line_dict)
                 self.__close_session()
                 return True
             elif log_line_dict is not None and 'session is terminated' in log_line_dict.message:
@@ -309,6 +311,10 @@ class LogFileParser(object):
     def __open_session(self, log_dict=None):
         self.__parsed_file.open_session(log_dict)
         self.__session_opened = True
+
+
+    def add_misaligned_ended_session(self, log_dict):
+        self.__parsed_file.add_misaligned_ended_session(log_dict)
 
     def __close_session(self, crashedsession=False):
         self.__parsed_file.close_session(crashedsession)
@@ -344,7 +350,7 @@ class FolderLogParser(object):
             if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
                 log_context.limit = kwargs[ParamNames.provide_context]
             else:
-                log_context.limit = 0
+                log_context.limit = DEFAULT_CONTEXT_LENGTH
             self.__csv_file_name = os_path_helper.generate_file_name('log-files-parsed - ')
             self.__processed_file_count = 0
             self.__min_date = MIN_DATE

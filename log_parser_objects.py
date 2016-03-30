@@ -5,6 +5,7 @@ from datetime import datetime, date
 import csv_helper
 from constants import Headers, LogLevels, RowTypes
 from regex_helper import StringDateHelper
+from constants import DEFAULT_CONTEXT_LENGTH
 
 
 # Date used when the date and time from the log line cannot be parsed
@@ -15,7 +16,7 @@ UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
 #   Log context: a log line list that came before a log entry that has been selected to be part of the resulting analysis
 #
 class LogContext(list):
-    def __init__(self, max_lines = 5):
+    def __init__(self, max_lines = DEFAULT_CONTEXT_LENGTH):
         self.__limit = max_lines
 
     def __str__(self):
@@ -290,6 +291,7 @@ class ParsedLogFile(object):
         self.__current_session = LogSession(log_dict)
         self.__sessions.append(self.__current_session)
 
+
     # close the current session - if empty then delete it because we are not interested in sessions not meanningful
     def close_session(self, crashedsession=False):
         # document a crashed session (application crash, process killed)
@@ -300,6 +302,15 @@ class ParsedLogFile(object):
         if self.__current_session is not None and len(self.__current_session.lines) == 0:
             self.__sessions.remove(self.__current_session)
             self.__current_session = None
+
+    def add_misaligned_ended_session(self, log_dict):
+        if log_dict is None:
+            return
+        self.open_session(log_dict)
+        log_dict.set_value(Headers.category, 'CRASHED')
+        log_dict.set_value(Headers.type, 'UNMATCHED END SESSION')
+        self.add_log(log_dict)
+        self.close_session()
 
     def add_session_info(self, dict):
         if self.__current_session is None:
