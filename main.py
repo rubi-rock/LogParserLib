@@ -62,9 +62,9 @@ if __name__ == '__main__':
     print(len(lfl))
 
     flp = LogParser.FolderLogParser()
-    flp.parse("/Users/ChristianRocher/Downloads/log", datetime.datetime(year=2015, month=2, day=9), datetime.datetime(year=2016, month=2, day=9))
+    flp.parse("/Users/ChristianRocher/Downloads/log", datetime(year=2015, month=2, day=9), datetime(year=2016, month=2, day=9))
     print(len(flp.log_file_list))
-    flp.parse("/Users/ChristianRocher/Downloads/log", datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
+    flp.parse("/Users/ChristianRocher/Downloads/log", datetime(year=2016, month=3, day=10), datetime(year=2016, month=3, day=10))
     print(len(flp.log_file_list))
 
     res = RegExpSet()
@@ -170,15 +170,15 @@ if __name__ == '__main__':
     # parse one file for specific log levels in a specific date range. If the ParamNames.performance_trigger_in_ms general
     # setting is not None or 0, then no need to select the STATISTIC level because it will be processed to identify
     # any performance issue anyway
-    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime(year=2016, month=3, day=1), datetime(year=2016, month=3, day=31))
-    #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS/log - copie/bdobson", log_levels, datetime.datetime(year=2016, month=1, day=1), datetime.datetime(year=2016, month=3, day=31))
-    #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
-    #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime.datetime(year=2016, month=3, day=10), datetime.datetime(year=2016, month=3, day=10))
-    #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime.datetime(year=2016, month=1, day=10), datetime.datetime(year=2016, month=3, day=10))
-    #flp.parse("/Users/ChristianRocher/Downloads/log/LBlundell", log_levels, datetime.datetime(year=2016, month=3, day=1), datetime.datetime(year=2016, month=3, day=31))
+    #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime(year=2016, month=3, day=1), datetime(year=2016, month=3, day=31))
+    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS/log - copie/bdobson", log_levels, datetime(year=2016, month=1, day=1), datetime(year=2016, month=3, day=31))
+    #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime(year=2016, month=3, day=10), datetime(year=2016, month=3, day=10))
+    #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime(year=2016, month=3, day=10), datetime(year=2016, month=3, day=10))
+    #flp.parse("/Users/ChristianRocher/Downloads/log/afisher", log_levels, datetime(year=2016, month=1, day=10), datetime(year=2016, month=3, day=10))
+    #flp.parse("/Users/ChristianRocher/Downloads/log/LBlundell", log_levels, datetime(year=2016, month=3, day=1), datetime(year=2016, month=3, day=31))
 
-    #flp.parse(r"C:\Users\crocher\Downloads\ACTUEL_TS_LOGS\Mar-29-2016", log_levels, datetime.datetime(year=2016, month=3, day=24), datetime.datetime(year=2016, month=3, day=31))
-    #flp.parse(r"C:\Users\crocher\Downloads\ACTUEL_TS_LOGS\Mar-29-2016\log - 2012_ts5-Mar29\log - Copy", log_levels, datetime.datetime(year=2016, month=3, day=24), datetime.datetime(year=2016, month=3, day=31))
+    #flp.parse(r"C:\Users\crocher\Downloads\ACTUEL_TS_LOGS\Mar-29-2016", log_levels, datetime(year=2016, month=3, day=24), datetime(year=2016, month=3, day=31))
+    #flp.parse(r"C:\Users\crocher\Downloads\ACTUEL_TS_LOGS\Mar-29-2016\log - 2012_ts5-Mar29\log - Copy", log_levels, datetime(year=2016, month=3, day=24), datetime(year=2016, month=3, day=31))
 
     #flp.save_to_csv_file()
 
