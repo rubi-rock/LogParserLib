@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
     Another way to use it is : on the all application:
         . from a shel call the profiler with your script in parameter:
-            $ cprofilev  main.py ;
+            $ cprofilev  main.py
         . it creates a file profile_output that is unreadable ;) Don't panic, just open the URL to be able to read it:
             http://127.0.0.1:4000/
         . don't need to wait the end of the execution of your script to see result, you can check the
