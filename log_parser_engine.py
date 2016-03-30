@@ -233,59 +233,65 @@ class LogFileParser(object):
         try:
             file_name = self.parsed_file.parsed_file_info.fullname
             if not os.path.exists(file_name):
-                exit()
+                return
+            bak_file_name = file_name + '.bak'
+            if not os.path.exists(file_name):
+                self.__do_parse_file(bak_file_name)
+            self.__do_parse_file(file_name)
 
-            logging.info("Processing file: %s", file_name)
-            text_file = open(file_name, mode='rt',
-                             encoding='latin-1')  # required to use latin-1 because logs contain french (i.e.: çéèà...)
-            try:
-                for line in iter(text_file):
-                    self.__lines_processed += 1
-
-                    if len(line) <= 1:
-                        continue
-
-                    log_line_dict = self.__split_line(line)
-                    if log_line_dict is None:
-                        # when statistics level is active there is too much garbage: not well formatted lines that are not recognized to log that
-                        # logging.error("Unable to parse line: %s", line)
-                        continue
-
-                    if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
-                        continue  # because it's not in the date range to process
-
-                    log_context.append(line)
-
-                    if self.__process_session(log_line_dict):
-                        continue  # because it was BEGIN SESSION or END SESSION
-
-                    if self.__extract_session_info(log_line_dict):
-                        continue  # because it was about the session info
-
-                    # Here process the log performance trigger
-                    if self.__performance_trigger_in_ms is not None:
-                        if self.__track_potential_performance_issue(log_line_dict):
-                            continue
-
-                    filtered_out = True
-                    for key, level in self.__filtered_in_levels.items():
-                        if level in line:
-                            filtered_out = False
-
-                    # If not added when it was triggered as an Exception or a new session then it must be part of the
-                    # context
-                    if filtered_out:
-                        continue
-
-                    if not self.__is_line_excluded(line):
-                        self.__set_line_category(log_line_dict)
-                        self.__parsed_file.add_log(log_line_dict)
-            finally:
-                self.__process_session(None)  # Close the session if not yet done (crashed session?)
-                text_file.close()
         except Exception:
             logging.exception('')
             raise
+
+    def __do_parse_file(self, file_name):
+        logging.info("Processing file: %s", file_name)
+        text_file = open(file_name, mode='rt',
+                         encoding='latin-1')  # required to use latin-1 because logs contain french (i.e.: çéèà...)
+        try:
+            for line in iter(text_file):
+                self.__lines_processed += 1
+
+                if len(line) <= 1:
+                    continue
+
+                log_line_dict = self.__split_line(line)
+                if log_line_dict is None:
+                    # when statistics level is active there is too much garbage: not well formatted lines that are not recognized to log that
+                    # logging.error("Unable to parse line: %s", line)
+                    continue
+
+                if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
+                    continue  # because it's not in the date range to process
+
+                log_context.append(line)
+
+                if self.__process_session(log_line_dict):
+                    continue  # because it was BEGIN SESSION or END SESSION
+
+                if self.__extract_session_info(log_line_dict):
+                    continue  # because it was about the session info
+
+                # Here process the log performance trigger
+                if self.__performance_trigger_in_ms is not None:
+                    if self.__track_potential_performance_issue(log_line_dict):
+                        continue
+
+                filtered_out = True
+                for key, level in self.__filtered_in_levels.items():
+                    if level in line:
+                        filtered_out = False
+
+                # If not added when it was triggered as an Exception or a new session then it must be part of the
+                # context
+                if filtered_out:
+                    continue
+
+                if not self.__is_line_excluded(line):
+                    self.__set_line_category(log_line_dict)
+                    self.__parsed_file.add_log(log_line_dict)
+        finally:
+            self.__process_session(None)  # Close the session if not yet done (crashed session?)
+            text_file.close()
 
     def __process_session(self, log_line_dict):
         try:
@@ -414,7 +420,7 @@ class FolderLogParser(object):
             self.prepare_levels()
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
-            self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log', '*.log.bak'],
+            self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
             logging.info("%s files found:", str(len(self.__log_file_info_list)))
             for log_file in self.__log_file_info_list:
