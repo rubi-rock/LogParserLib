@@ -1,7 +1,7 @@
 import logging
 import os
 import fnmatch
-import datetime
+from datetime import datetime
 import inspect
 import sys
 
@@ -14,7 +14,7 @@ class FileInfo(dict):
         absolute_filename = os.path.join(root, filename)
         self['file_name'] = os.path.basename(absolute_filename)
         self['path'] = os.path.dirname(absolute_filename)
-        self['date'] = datetime.datetime.fromtimestamp(os.stat(self.fullname).st_mtime)
+        self['date'] = datetime.fromtimestamp(os.stat(self.fullname).st_mtime)
 
     def __str__(self):
         return "Path: {0}, File Name: {1}, Changed Date: {2}".format(self.path, self.file_name, self.date)
@@ -75,3 +75,8 @@ def create_folder_if_doest_not_exists(folder_name):
         except Exception as e:
             logging.exception("Unable to find or create the folder " + folder_name, e)
             sys.exit()
+
+def generate_file_name(prefix='', path = os.path.curdir):
+    filename = '%s.csv' % datetime.now().strftime('%Y%m%d-%H%M%S')
+    filename = prefix + filename if prefix is not None and prefix != '' else filename
+    return os.path.join(path, filename)
