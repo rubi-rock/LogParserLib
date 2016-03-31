@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import os_path_helper
 import other_helpers
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, \
-    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH
+    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
 from log_parser_objects import log_context, Log_Line, ParsedLogFile
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
@@ -129,8 +129,6 @@ DETAILLED_LOGGING_FILE = 1  # Statis about the file only
 DETAILLED_LOGGING_SESSION = 2  # details of the file (sessions & lines preserved)
 DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_FILE
 
-MIN_DATE = datetime(year=2015, month=1, day=1)
-MAX_DATE = datetime(year=2100, month=12, day=31)
 
 
 #
@@ -212,11 +210,6 @@ class LogFileParser(object):
         try:
             log_dict = LogLineSplitter.low_level_parse_log_line(line)
             return Log_Line(log_dict)
-            # match = LogLineSplitter.parse_log_line(line)
-            # if match is not None:
-            #    return Log_Line(match.groupdict())
-            # else:
-            #    return None
         except Exception:
             logging.exception('')
             raise
@@ -235,7 +228,7 @@ class LogFileParser(object):
             if not os.path.exists(file_name):
                 return
             bak_file_name = file_name + '.bak'
-            if not os.path.exists(file_name):
+            if os.path.exists(bak_file_name):
                 self.__do_parse_file(bak_file_name)
             self.__do_parse_file(file_name)
 
@@ -243,6 +236,7 @@ class LogFileParser(object):
             logging.exception('')
             raise
 
+    #
     def __do_parse_file(self, file_name):
         logging.info("Processing file: %s", file_name)
         text_file = open(file_name, mode='rt',
@@ -255,26 +249,8 @@ class LogFileParser(object):
                     continue
 
                 log_line_dict = self.__split_line(line)
-                if log_line_dict is None:
-                    # when statistics level is active there is too much garbage: not well formatted lines that are not recognized to log that
-                    # logging.error("Unable to parse line: %s", line)
+                if self.__filter_log_line(log_line_dict, line):
                     continue
-
-                if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
-                    continue  # because it's not in the date range to process
-
-                log_context.append(line)
-
-                if self.__process_session(log_line_dict):
-                    continue  # because it was BEGIN SESSION or END SESSION
-
-                if self.__extract_session_info(log_line_dict):
-                    continue  # because it was about the session info
-
-                # Here process the log performance trigger
-                if self.__performance_trigger_in_ms is not None:
-                    if self.__track_potential_performance_issue(log_line_dict):
-                        continue
 
                 filtered_out = True
                 for key, level in self.__filtered_in_levels.items():
@@ -293,6 +269,32 @@ class LogFileParser(object):
             self.__process_session(None)  # Close the session if not yet done (crashed session?)
             text_file.close()
 
+    #
+    def __filter_log_line(self, log_line_dict, line):
+        if log_line_dict is None:
+            # when statistics level is active there is too much garbage: not well formatted lines that are not recognized to log that
+            # logging.error("Unable to parse line: %s", line)
+            return True
+
+        if not self.__min_date.date() <= log_line_dict.date <= self.__max_date.date():
+            return True  # because it's not in the date range to process
+
+        log_context.append(line)
+
+        if self.__process_session(log_line_dict):
+            return True   # because it was BEGIN SESSION or END SESSION
+
+        if self.__extract_session_info(log_line_dict):
+            return True  # because it was about the session info
+
+        # Here process the log performance trigger
+        if self.__performance_trigger_in_ms is not None:
+            if self.__track_potential_performance_issue(log_line_dict):
+                return True
+
+        return False
+
+    #
     def __process_session(self, log_line_dict):
         try:
             if log_line_dict is not None and log_line_dict.message.startswith('BEGIN SESSION'):

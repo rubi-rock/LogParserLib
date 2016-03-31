@@ -1,4 +1,8 @@
 from other_helpers import ListEnum
+from _datetime import datetime
+
+MIN_DATE = datetime(year=2015, month=1, day=1)
+MAX_DATE = datetime(year=2100, month=12, day=31)
 
 #
 #

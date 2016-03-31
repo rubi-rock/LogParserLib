@@ -5,7 +5,7 @@ from datetime import datetime, date
 import csv_helper
 from constants import Headers, LogLevels, RowTypes
 from regex_helper import StringDateHelper
-from constants import DEFAULT_CONTEXT_LENGTH
+from constants import DEFAULT_CONTEXT_LENGTH, MIN_DATE
 
 
 # Date used when the date and time from the log line cannot be parsed
@@ -43,6 +43,15 @@ class LogContext(list):
 # Keep it global for now, it's easier to log the previous log line no matter from where
 log_context = LogContext()
 
+class GroupSeq(object):
+    def __init__(self):
+        self.__group_seq = 0
+
+    def next(self):
+        self.__group_seq += 1
+        return self.__group_seq
+group_seq = GroupSeq()
+
 
 class LogSession(object):
     __id_seq = 0
@@ -64,6 +73,8 @@ class LogSession(object):
             self.__has_crashed = False
             self.__termination_reason = None
             self.__info = {}
+            self.__group = 0
+            self.__last_log_time = MIN_DATE
         except Exception:
             logging.exception('')
             raise
@@ -83,6 +94,14 @@ class LogSession(object):
 
     # Add a filtered in log line
     def add_log(self, log_dict):
+        dt = log_dict.datetime
+        delta = dt - self.__last_log_time
+        if delta.seconds > 1:
+            self.__group = group_seq.next()
+
+        log_dict.set_value(Headers.group, self.__group)
+        self.__last_log_time = dt
+
         self.__lines.append(log_dict)
 
     # Add an entry to the session to indicate when the session did not terminate properly (killed session, crash...)
@@ -234,6 +253,11 @@ class Log_Line(object):
         else:
             return "[date={0}][time={1}][category={2}][level={3}][module={4}][group={5}][message={6}]".format(
                 self.date, self.time, self.category, self.level, self.module, self.group, self.message)
+
+    @property
+    def datetime(self):
+        return datetime.combine(self.date, self.time)
+
 
     @property
     def as_csv_row(self):
