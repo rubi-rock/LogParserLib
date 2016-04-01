@@ -1,24 +1,57 @@
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import  QFileDialog
-import LogParserMainWindow
-import icons_rc
-from constants import LOG_LEVEL_LIST, DEFAULT_EXCLUSIONS, DEFAULT_CATEGORIES
+from PyQt5.QtCore import QEvent, QObject, pyqtSignal
 
+from collections import OrderedDict
+import os.path
+
+import LogParserMainWindow
+from constants import LOG_LEVEL_LIST, DEFAULT_LOG_LEVELS, DEFAULT_EXCLUSIONS, DEFAULT_CATEGORIES, DEFAULT_CONTEXT_LENGTH, \
+    DEFAULT_PERFORMANCE_TRIGGER_IN_MS, ParamNames
+import log_parser_engine
+
+# Keep it - required for the icons on the buttons of the main form
+import icons_rc
+
+SPLITTER_MIN_SIZE = 30
 
 class LogParserMainWindows(object):
-    def __init__(self, selected_log_levels = None):
+    def __init__(self):
         self.__app = QtWidgets.QApplication(sys.argv)
         self.__mainwindow = QtWidgets.QMainWindow()
         self.__ui = LogParserMainWindow.Ui_MainWindow()
         self.__ui.setupUi(self.__mainwindow)
+        self.__init_UI()
         self.__init_events()
-        self.__init_UI(selected_log_levels)
+        self.__mainwindow.setContentsMargins( 0, 0 ,0 ,0)
 
-    def __init_UI(self, selected_log_levels):
-        self.__init_loglevels(selected_log_levels)
+    # Init the form with required data (or config)
+    def __init_UI(self):
+        self.__ui.actionParse.setEnabled(False)
+        self.__init_loglevels(DEFAULT_LOG_LEVELS)
         self.__init_exclusions()
         self.__init_categories()
+        self.__ui.spin_contextLOL.setValue(DEFAULT_CONTEXT_LENGTH)
+        self.__ui.spin_perfTrigger.setValue(DEFAULT_PERFORMANCE_TRIGGER_IN_MS / 1000)
+
+    #
+    # Initialization of the UI
+    #
+
+    # Show or hide the console region (toggle)
+    def __toggle_console_display(self, show = None):
+        if show is None:
+            self.__ui.frame_console.setVisible(not self.__ui.frame_console.isVisible())
+        else:
+            self.__ui.frame_console.setVisible(show)
+
+        icon = QtGui.QIcon()
+        if self.__ui.frame_console.isVisible():
+            icon.addPixmap(QtGui.QPixmap(":/icons/arrow-down-16.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        else:
+            icon.addPixmap(QtGui.QPixmap(":/icons/arrow-up-16.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.__ui.btn_toggleConsole.setIcon(icon)
 
     # Load exclusions on screen
     def __init_exclusions(self):
@@ -32,12 +65,6 @@ class LogParserMainWindows(object):
         for cat_name, cat_expr in DEFAULT_CATEGORIES.items():
             self.__ui.edt_Categories.appendPlainText(cat_name.split('.', 1)[1] + '=' + cat_expr)
 
-    # Connect all events
-    def __init_events(self):
-        self.__ui.actionQuit.triggered.connect(self.__handleQuitButton)
-        self.__ui.actionSelect_Folder.triggered.connect(self.__select_Dir)
-        self.__ui.btn_SelectDir.clicked.connect(self.__select_Dir)
-
     # Initialize the log level checkbox list
     def __init_loglevels(self, selected_log_levels):
         if selected_log_levels is None:
@@ -49,6 +76,20 @@ class LogParserMainWindows(object):
             item = QtWidgets.QListWidgetItem(level, self.__ui.listWidget_LogLevels)
             item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
             item.setCheckState(QtCore.Qt.Checked if level in selected_log_levels.values() else QtCore.Qt.Unchecked)
+
+    #
+    # Initialization of the UI event handlers
+    #
+
+    # Connect all events
+    def __init_events(self):
+        self.__ui.actionQuit.triggered.connect(self.__handleQuitButton)
+        self.__ui.actionSelect_Folder.triggered.connect(self.__select_Dir)
+        self.__ui.btn_SelectDir.clicked.connect(self.__select_Dir)
+        self.__ui.edt_Path.textChanged.connect(self.__edt_path_changed)
+        self.__ui.actionParse.triggered.connect(self.__parse)
+        self.__ui.btn_toggleConsole.clicked.connect(self.__toggle_console_clicked)
+
 
     # Quit action event handler
     def __handleQuitButton(self):
@@ -63,6 +104,57 @@ class LogParserMainWindows(object):
         if dialog.exec_():
             self.__ui.edt_Path.setText(dialog.selectedFiles()[0])
 
+    # Path field changed event handler
+    def __edt_path_changed(self, text):
+        self.__ui.actionParse.setEnabled(os.path.exists(text))
+
+    # Toggle console view event hendler
+    def __toggle_console_clicked(self):
+        self.__toggle_console_display()
+
+    #
+    # Getter to retrieve values from the UI
+    #
+
+    # Returns exclusion from the UI (user's choice instead of the defaults)
+    def __get_exclusions_from_UI(self):
+        lines = self.__ui.edt_Exclusions.toPlainText().split('\n')
+        exclusions = OrderedDict( [ ( lines.index(excl), excl ) for excl in lines] )
+        return exclusions
+
+    # Returns exclusion from the UI (user's choice instead of the defaults)
+    def __get_categories_from_UI(self):
+        categories = OrderedDict()
+        lines = self.__ui.edt_Categories.toPlainText().split('\n')
+        for line in lines:
+            line = line.split('=', 1)
+            cat_name = '{0}.{1}'.format(len(categories) + 1, line[0])
+            cat_expr = line[1]
+            categories[cat_name] = cat_expr
+        return categories
+
+    # Returns parameters from the UI (user's choice instead of the defaults)
+    def __get_params_from_UI(self):
+        params = {}
+        params[ParamNames.exclusions] = self.__get_exclusions_from_UI()
+        params[ParamNames.categories] = self.__get_categories_from_UI()
+        params[ParamNames.performance_trigger_in_ms] = self.__ui.spin_perfTrigger.value() * 1000
+        params[ParamNames.provide_context] = self.__ui.spin_contextLOL.value()
+        return params
+
+    #
+    # Parse the log file action event handler
+    #
+    def __parse(self):
+        self.__toggle_console_display(True)
+        params = self.__get_params_from_UI()
+        # params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
+        flp = log_parser_engine.FolderLogParser(**params)
+        flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime(), self.__ui.date_To.dateTime())
+
+    #
+    # Show the main window (maximized)
+    #
     def ShowMainWindow(self):
         self.__mainwindow.showMaximized()
         sys.exit(self.__app.exec_())

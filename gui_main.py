@@ -15,18 +15,7 @@ import LogParserGUI
 if __name__ == '__main__':
     logging.info("Start")
 
-    log_levels = {
-        '1': LOG_LEVEL_LIST.OPERATING_SYSTEM,
-        '2': LOG_LEVEL_LIST.FATAL,
-        '3': LOG_LEVEL_LIST.EXCEPTION_TRACK,
-        '4': LOG_LEVEL_LIST.LEAK,
-        # '5': LogLevels.STATISTIC,
-        '10': LOG_LEVEL_LIST.SYST_HIGH,
-        '11': LOG_LEVEL_LIST.SYST_MEDIUM,
-        '12': LOG_LEVEL_LIST.SYST_LOW
-    }
-
-    mainwindow = LogParserGUI.LogParserMainWindows(log_levels)
+    mainwindow = LogParserGUI.LogParserMainWindows()
     mainwindow.ShowMainWindow()
 
 

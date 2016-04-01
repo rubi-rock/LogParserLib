@@ -11,5 +11,7 @@
         <file>icons/trash-icon_32.png</file>
         <file>icons/bin-red-full-icon_32.png</file>
         <file>icons/log_oxigen_32.png</file>
+        <file>icons/arrow-down-16.png</file>
+        <file>icons/arrow-up-16.png</file>
     </qresource>
 </RCC>
