@@ -468,7 +468,7 @@
           <item>
            <widget class="QLabel" name="label_Exclusions">
             <property name="text">
-             <string>Exclusions</string>
+             <string>Exclusions:</string>
             </property>
            </widget>
           </item>
@@ -482,12 +482,12 @@
           <item>
            <widget class="QLabel" name="label_Categories">
             <property name="text">
-             <string>Categories</string>
+             <string>Categories:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListView" name="listView_Categories"/>
+           <widget class="QPlainTextEdit" name="edt_Categories"/>
           </item>
          </layout>
         </item>
