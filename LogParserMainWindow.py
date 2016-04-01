@@ -308,7 +308,7 @@ class Ui_MainWindow(object):
         self.mainToolBar.addAction(self.actionLoad_config_from_file)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget_General.setCurrentIndex(0)
+        self.tabWidget_General.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
