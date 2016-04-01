@@ -7,7 +7,7 @@ MAX_DATE = datetime(year=2100, month=12, day=31)
 #
 #
 #
-LogLevels = ListEnum(
+LOG_LEVEL_LIST = ListEnum(
     [  # Standard log levels
         'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'ACTION', 'TRACE', 'DUMP',
         'MESSAGES', 'UNKNOWN',
@@ -89,13 +89,13 @@ DEFAULT_EXCLUSIONS = {
 }
 
 DEFAULT_LOG_LEVELS = {
-    '1': LogLevels.OPERATING_SYSTEM,
-    '2': LogLevels.FATAL,
-    '3': LogLevels.EXCEPTION_TRACK,
-    '4': LogLevels.LEAK,
-    '10': LogLevels.SYST_HIGH,
-    '11': LogLevels.SYST_MEDIUM,
-    '12': LogLevels.SYST_LOW
+    '1': LOG_LEVEL_LIST.OPERATING_SYSTEM,
+    '2': LOG_LEVEL_LIST.FATAL,
+    '3': LOG_LEVEL_LIST.EXCEPTION_TRACK,
+    '4': LOG_LEVEL_LIST.LEAK,
+    '10': LOG_LEVEL_LIST.SYST_HIGH,
+    '11': LOG_LEVEL_LIST.SYST_MEDIUM,
+    '12': LOG_LEVEL_LIST.SYST_LOW
 }
 
 DEFAULT_CATEGORIES = {

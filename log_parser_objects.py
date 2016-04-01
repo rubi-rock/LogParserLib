@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, date
 
 import csv_helper
-from constants import Headers, LogLevels, RowTypes
+from constants import Headers, LOG_LEVEL_LIST, RowTypes
 from regex_helper import StringDateHelper
 from constants import DEFAULT_CONTEXT_LENGTH, MIN_DATE
 
@@ -125,7 +125,7 @@ class LogSession(object):
             crash_log_line.set_value(Headers.message, 'SESSION TERMINATED ABNORMALLY - REASON UNKNOWN (log "END SESSION" not found)')
             crash_log_line.set_value(Headers.category, 'CRASHED')
 
-        crash_log_line.set_value(Headers.level, LogLevels.EXCEPTION_TRACK)
+        crash_log_line.set_value(Headers.level, LOG_LEVEL_LIST.EXCEPTION_TRACK)
         crash_log_line.set_value(Headers.group, 99999)  # Special group for the crashed indicator
         self.add_log(crash_log_line)
 

@@ -3,7 +3,7 @@ import uuid
 import re
 import datetime
 import dateutil.parser
-from constants import Headers, LogLevels
+from constants import Headers, LOG_LEVEL_LIST
 
 
 class PreparedExpressionList(dict):
@@ -186,7 +186,7 @@ class LogLineSplitter(object):
                     log_dict[Headers.module] = None
             # probably one of those not standard logs (e.g.: CPU)... :-(
             else:
-                log_dict[Headers.level] = LogLevels.LOG
+                log_dict[Headers.level] = LOG_LEVEL_LIST.LOG
                 log_dict[Headers.module] = None
 
             # process the map tag and the level again when reading mapgen information in an application file (e.g.: dci.exe)
@@ -198,7 +198,7 @@ class LogLineSplitter(object):
             # like that just before because it's not always the case for the MAPGEN logs
             if tmp[1].strip()[0] == '[':
                 tmp = tmp[1].split('[', 1)[1].split(']', 1)
-                if tmp[0] in LogLevels.as_list:
+                if tmp[0] in LOG_LEVEL_LIST.as_list:
                     log_dict[Headers.level] = tmp[0]
                 else:
                     fake_level_true_message = tmp[0]

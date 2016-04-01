@@ -43,7 +43,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_Parameters">
        <attribute name="title">
@@ -328,12 +328,12 @@
             <item>
              <widget class="QLabel" name="label_AppLogLevels">
               <property name="text">
-               <string>Application Log Levels:</string>
+               <string>Log Levels:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="listWidget_AppLogLevels">
+             <widget class="QListWidget" name="listWidget_LogLevels">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -461,45 +461,6 @@
             </item>
            </layout>
           </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_5">
-            <property name="sizeConstraint">
-             <enum>QLayout::SetFixedSize</enum>
-            </property>
-            <item>
-             <widget class="QLabel" name="label_MapLogLevels">
-              <property name="text">
-               <string>Mapgen Log Levels:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QListWidget" name="listWidget_MapLogLevels">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>80</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>80</height>
-               </size>
-              </property>
-              <property name="isWrapping" stdset="0">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
          </layout>
         </item>
         <item>
@@ -533,7 +494,6 @@
        </layout>
        <zorder></zorder>
        <zorder></zorder>
-       <zorder>horizontalLayoutWidget</zorder>
       </widget>
      </widget>
     </item>
