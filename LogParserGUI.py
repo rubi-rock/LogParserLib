@@ -17,7 +17,7 @@ import icons_rc
 SPLITTER_MIN_SIZE = 30
 
 class LogParserMainWindows(object):
-    def __init__(self):
+    def __init__(self, path=None, fromdate=None, todate=None):
         self.__app = QtWidgets.QApplication(sys.argv)
         self.__mainwindow = QtWidgets.QMainWindow()
         self.__ui = LogParserMainWindow.Ui_MainWindow()
@@ -28,6 +28,14 @@ class LogParserMainWindows(object):
         self.__stopped = False
         self.__console_scrollbar = self.__ui.edt_console.verticalScrollBar()
         self.__init_statusbar()
+        self.__ui.treeWidget_Results.clear()
+
+        if path is not None:
+            self.__ui.edt_Path.setText(path)
+        if fromdate is not None:
+            self.__ui.date_From.setDate( QtCore.QDate.fromString(str(fromdate), 'yyyy-MM-dd'))
+        if todate is not None:
+            self.__ui.date_To.setDate(QtCore.QDate.fromString(str(todate), 'yyyy-MM-dd'))
 
     # Init the form with required data (or config)
     def __init_UI(self):
@@ -192,9 +200,14 @@ class LogParserMainWindows(object):
     # Manage actions states
     def __update_action_states(self, isparsing):
         self.__ui.actionStop.setEnabled(isparsing)
-        self.__ui.actionParse.setEnabled(not isparsing and os.path.exists(self.__ui.actionParse.text()))
+        self.__ui.actionParse.setEnabled((not isparsing) and os.path.exists(self.__ui.edt_Path.text()))
         self.__ui.actionQuit.setEnabled(not isparsing)
         self.__ui.actionClean_logs.setEnabled(not isparsing)
+        self.__ui.actionSelect_Folder.setEnabled(not isparsing)
+        self.__ui.actionLoad_config_from_file.setEnabled(not isparsing)
+        self.__ui.actionLoad_Results_from_CSV.setEnabled(not isparsing)
+        self.__ui.actionSave_config_to_file.setEnabled(not isparsing)
+        self.__ui.actionSave_Results_to_CSV.setEnabled(not isparsing)
 
     #
     # Parse the log file action event handler
@@ -210,7 +223,7 @@ class LogParserMainWindows(object):
             flp.set_progress_callback(self.__progress_callback)
             flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime())
         finally:
-            self.__update_action_states(True)
+            self.__update_action_states(False)
 
     #
     # Show the main window (maximized)

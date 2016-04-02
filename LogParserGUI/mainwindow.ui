@@ -283,11 +283,6 @@
           </column>
           <column>
            <property name="text">
-            <string>Icon</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
             <string>Date/Time</string>
            </property>
           </column>
@@ -303,7 +298,12 @@
           </column>
           <column>
            <property name="text">
-            <string>Label</string>
+            <string>Message</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Context</string>
            </property>
           </column>
           <item>
@@ -315,10 +315,10 @@
              <normaloff>:/icons/folder_search_32.png</normaloff>:/icons/folder_search_32.png</iconset>
            </property>
            <property name="text">
-            <string/>
+            <string>2016/03/01</string>
            </property>
            <property name="text">
-            <string>2016/03/01</string>
+            <string/>
            </property>
            <property name="text">
             <string/>
@@ -338,9 +338,6 @@
               <normaloff>:/icons/delete_24.png</normaloff>:/icons/delete_24.png</iconset>
             </property>
             <property name="text">
-             <string/>
-            </property>
-            <property name="text">
              <string>18:34</string>
             </property>
             <property name="text">
@@ -351,6 +348,9 @@
             </property>
             <property name="text">
              <string>RDP Session Terminated by windows</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
            </item>
           </item>
@@ -675,6 +675,12 @@
       </property>
       <item>
        <widget class="QFrame" name="frame_files">
+        <property name="minimumSize">
+         <size>
+          <width>250</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -736,6 +742,12 @@
       </item>
       <item>
        <widget class="QFrame" name="frame_lines">
+        <property name="minimumSize">
+         <size>
+          <width>250</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -797,6 +809,12 @@
       </item>
       <item>
        <widget class="QFrame" name="frame_log_entries">
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -834,14 +852,16 @@
           </widget>
          </item>
         </layout>
-        <zorder>progressBar</zorder>
-        <zorder>frame_elapsed_time</zorder>
-        <zorder>lbl_log_entries_count</zorder>
-        <zorder>label_15</zorder>
        </widget>
       </item>
       <item>
        <widget class="QFrame" name="frame_elapsed_time">
+        <property name="minimumSize">
+         <size>
+          <width>250</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -918,7 +938,6 @@
    <zorder>tabWidget_General</zorder>
    <zorder>frame_console</zorder>
    <zorder>frame_console_titlebar</zorder>
-   <zorder>horizontalLayoutWidget</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

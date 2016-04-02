@@ -28,7 +28,8 @@ def WriteParsedLoFileToCSV(parsed_file, csv_file_name):
         with open(csv_file_name, mode) as csvfile:
             writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL,
                                     fieldnames=Headers)
-            writer.writeheader()
+            if mode == 'w':
+                writer.writeheader()
 
             # dump the file
             file_name = parsed_file.parsed_file_info.fullname
