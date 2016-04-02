@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import os_path_helper
 import other_helpers
-from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, \
+from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
     DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
 from log_parser_objects import log_context, Log_Line, ParsedLogFile
 from os_path_helper import FileSeeker
@@ -355,6 +355,9 @@ class FolderLogParser(object):
     # @measure
     def __init__(self, **kwargs):
         try:
+            self.__stopped = False;
+            self.__timer = None
+            self.__progress_callback = None
             if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
                 log_context.limit = kwargs[ParamNames.provide_context]
             else:
@@ -381,6 +384,8 @@ class FolderLogParser(object):
                 else DefaultSessionInfo
             self.__files_processed = 0
             self.__lines_parsed = 0
+            self.__lines_to_analyze_count = 0
+            self.__last_logfile_lines_parsed = 0
         except Exception:
             logging.exception('')
             raise
@@ -424,13 +429,25 @@ class FolderLogParser(object):
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
-            logging.info("%s files found:", str(len(self.__log_file_info_list)))
+            log_text = "{0} files found:".format(len(self.__log_file_info_list))
+            logging.info(log_text)
+            self.__provide_feedback(**{StatusBarValues.text : log_text})
+
             for log_file in self.__log_file_info_list:
                 logging.info(log_file.fullname)
+                self.__provide_feedback(**{StatusBarValues.text: log_file.fullname})
+
             self.do_parse_files()
         except Exception:
             logging.exception('')
             raise
+
+    def __provide_feedback(self, **kwargs):
+        if self.__progress_callback is not None:
+            if self.__timer is not None:
+                kwargs[StatusBarValues.elapsed_time] = self.__timer.time_to_str
+            kwargs[StatusBarValues.lines_to_analyze] = self.total_lines_to_analyze
+            self.__stopped = self.__progress_callback(**kwargs)
 
     def prepare_levels(self):
         for key, level in self.__filtered_in_levels.items():
@@ -451,21 +468,30 @@ class FolderLogParser(object):
             if len(parsed_file.sessions) > 0:
                 self.__parsed_files.append(parsed_file)
             else:
-                logging.info("\t%s does not contains any lines to analyze", parsed_file.parsed_file_info.fullname)
+                log_text = "\t{0} does not contains any lines to analyze".format(parsed_file.parsed_file_info.fullname)
+                logging.info(log_text)
+                self.__provide_feedback(**{StatusBarValues.text: log_text})
+
             self.__lines_parsed += log_parser.lines_processed
 
+            log_text = "\tDone {0} - {1}/{2} lines parsed - {3}/{4} files. CPU Time: {5} sec., {6} new lines to analyze from this file.".format(
+                parsed_file.parsed_file_info.fullname,
+                log_parser.lines_processed,
+                self.lines_parsed,
+                self.files_processed,
+                len(self.log_file_info_list),
+                lt.time_to_str,
+                parsed_file.lines_count)
+            self.__provide_feedback(**{StatusBarValues.text: log_text,
+                                       StatusBarValues.total_lines: self.lines_parsed,
+                                       StatusBarValues.lines_processed: log_parser.lines_processed,
+                                       StatusBarValues.total_files: len(self.log_file_info_list),
+                                       StatusBarValues.files_processed: self.files_processed
+                                       })
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
-                logging.info(
-                    "\tDone {0} - {1}/{2} lines parsed - {3}/{4} files. CPU Time: {5} sec., {6} new lines to analyze from this file.".format(
-                        parsed_file.parsed_file_info.fullname,
-                        log_parser.lines_processed,
-                        self.lines_parsed,
-                        self.files_processed,
-                        len(self.log_file_info_list),
-                        lt.time_to_str,
-                        parsed_file.lines_count))
-            if DETAILLED_LOGGING_LEVEL > DETAILLED_LOGGING_FILE:
-                logging.info("%s", str(parsed_file))
+                logging.info(log_text)
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_SESSION:
+                    logging.info(str(parsed_file))
 
             if len(parsed_file.sessions) > 0:
                 return parsed_file
@@ -474,6 +500,9 @@ class FolderLogParser(object):
         except Exception:
             logging.exception('')
             raise
+
+    def set_progress_callback(self, callback):
+        self.__progress_callback = callback
 
     @property
     def parsed_files(self):
@@ -485,7 +514,8 @@ class FolderLogParser(object):
 
     @property
     def total_lines_to_analyze(self):
-        return sum(x.lines_count for x in self.parsed_files)
+        return self.__lines_to_analyze_count
+
 
     @property
     def sessions_count(self):
@@ -500,7 +530,7 @@ class FolderLogParser(object):
         return self.__processed_file_count
 
     def do_parse_files(self):
-        et = other_helpers.ElapseTimer()
+        self.__timer = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
             logging.info("Start processing log files...")
@@ -509,19 +539,30 @@ class FolderLogParser(object):
                 try:
                     parsed_file = self.parse_one_file(file_info)
                     if parsed_file is not None:
+                        self.__lines_to_analyze_count += parsed_file.lines_count
                         self.__save_parsed_file_to_csv(parsed_file)
+                    if self.__stopped:
+                        break
                 except Exception:
                     logging.exception('')
+
+            log_text = "Processing log files done with a total of {0} files and {1} lines parsed in {2} sec. Output: {3} files with {4} sessions containing a total of {5} lines to process!!!".format(
+                self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count,
+                self.sessions_count, self.total_lines_to_analyze)
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
+
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
-                logging.info(
-                    "Processing log files done with a total of {0} files and {1} lines parsed in {2} sec. Output: {3} files with {4} sessions containing a total of {5} lines to process!!!".format(
-                        self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count,
-                        self.sessions_count, self.total_lines_to_analyze))
-                time_per_line = pt.time / self.lines_parsed if self.lines_parsed > 0 else 0
-                logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
-                    et.time_to_str,
-                    time_per_line * 1000,
-                    round(60 * self.lines_parsed / pt.time)))
+                logging.info(log_text)
+
+            time_per_line = pt.time / self.lines_parsed if self.lines_parsed > 0 else 0
+            log_text = "Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
+                self.__timer.time_to_str,
+                time_per_line * 1000,
+                round(60 * self.lines_parsed / pt.time))
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
+
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info(log_text)
         except Exception:
             logging.exception('')
             raise

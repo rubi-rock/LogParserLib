@@ -1,14 +1,14 @@
 import sys
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import  QFileDialog
-from PyQt5.QtCore import QEvent, QObject, pyqtSignal
+from PyQt5.QtCore import QCoreApplication
 
 from collections import OrderedDict
 import os.path
 
 import LogParserMainWindow
 from constants import LOG_LEVEL_LIST, DEFAULT_LOG_LEVELS, DEFAULT_EXCLUSIONS, DEFAULT_CATEGORIES, DEFAULT_CONTEXT_LENGTH, \
-    DEFAULT_PERFORMANCE_TRIGGER_IN_MS, ParamNames
+    DEFAULT_PERFORMANCE_TRIGGER_IN_MS, ParamNames, StatusBarValues
 import log_parser_engine
 
 # Keep it - required for the icons on the buttons of the main form
@@ -25,15 +25,48 @@ class LogParserMainWindows(object):
         self.__init_UI()
         self.__init_events()
         self.__mainwindow.setContentsMargins( 0, 0 ,0 ,0)
+        self.__stopped = False
+        self.__console_scrollbar = self.__ui.edt_console.verticalScrollBar()
+        self.__init_statusbar()
 
     # Init the form with required data (or config)
     def __init_UI(self):
         self.__ui.actionParse.setEnabled(False)
+        self.__ui.actionStop.setEnabled(False)
         self.__init_loglevels(DEFAULT_LOG_LEVELS)
         self.__init_exclusions()
         self.__init_categories()
         self.__ui.spin_contextLOL.setValue(DEFAULT_CONTEXT_LENGTH)
         self.__ui.spin_perfTrigger.setValue(DEFAULT_PERFORMANCE_TRIGGER_IN_MS / 1000)
+        self.__init_statusbar()
+
+    # Fill the statusbar with appropriate controls - not possible to do from Qt Creatur (!!!???)
+    def __init_statusbar(self):
+        self.__ui.statusBar.addWidget(self.__ui.frame_files, 0)
+        self.__ui.statusBar.addWidget(self.__ui.frame_lines, 0)
+        self.__ui.statusBar.addWidget(self.__ui.frame_elapsed_time, 0)
+        self.__ui.statusBar.addWidget(self.__ui.frame_log_entries, 0)
+        self.__ui.statusBar.addWidget(self.__ui.frame_progress_bar, 0)
+        self.__update_statusbar()
+
+    def __update_statusbar(self, **kwargs):
+        if StatusBarValues.total_files in kwargs.keys():
+            self.__ui.lbl_total_files.setText(str(kwargs[StatusBarValues.total_files]))
+            self.__ui.progressBar.setMaximum(kwargs[StatusBarValues.total_files])
+        if StatusBarValues.files_processed in kwargs.keys():
+            self.__ui.progressBar.setValue(kwargs[StatusBarValues.files_processed])
+            self.__ui.lbl_processed_files.setText(str(kwargs[StatusBarValues.files_processed]))
+
+        if StatusBarValues.lines_processed in kwargs.keys():
+            self.__ui.lbl_processed_lines.setText(str(kwargs[StatusBarValues.lines_processed]))
+        if StatusBarValues.total_lines in kwargs.keys():
+            self.__ui.lbl_total_lines.setText(str(kwargs[StatusBarValues.total_lines]))
+
+        if StatusBarValues.lines_to_analyze in kwargs.keys():
+            self.__ui.lbl_log_entries_count.setText(str(kwargs[StatusBarValues.lines_to_analyze]))
+
+        if StatusBarValues.elapsed_time in kwargs.keys():
+            self.__ui.lbl_elapsed_time.setText(kwargs[StatusBarValues.elapsed_time])
 
     #
     # Initialization of the UI
@@ -89,6 +122,7 @@ class LogParserMainWindows(object):
         self.__ui.edt_Path.textChanged.connect(self.__edt_path_changed)
         self.__ui.actionParse.triggered.connect(self.__parse)
         self.__ui.btn_toggleConsole.clicked.connect(self.__toggle_console_clicked)
+        self.__ui.actionStop.triggered.connect(self.__stop)
 
 
     # Quit action event handler
@@ -111,6 +145,19 @@ class LogParserMainWindows(object):
     # Toggle console view event hendler
     def __toggle_console_clicked(self):
         self.__toggle_console_display()
+
+    # Callback to display progresses
+    def __progress_callback(self, **kwargs):
+        if StatusBarValues.text in kwargs.keys():
+            self.__ui.edt_console.appendPlainText(kwargs[StatusBarValues.text])
+        self.__console_scrollbar.setValue(self.__console_scrollbar.maximum())   #autoscroll
+        self.__update_statusbar(**kwargs)
+        QCoreApplication.processEvents()
+        return self.__stopped
+
+    # STOP THE PARSING IN PROGRESS
+    def __stop(self):
+        self.__stopped = True
 
     #
     # Getter to retrieve values from the UI
@@ -142,15 +189,28 @@ class LogParserMainWindows(object):
         params[ParamNames.provide_context] = self.__ui.spin_contextLOL.value()
         return params
 
+    # Manage actions states
+    def __update_action_states(self, isparsing):
+        self.__ui.actionStop.setEnabled(isparsing)
+        self.__ui.actionParse.setEnabled(not isparsing and os.path.exists(self.__ui.actionParse.text()))
+        self.__ui.actionQuit.setEnabled(not isparsing)
+        self.__ui.actionClean_logs.setEnabled(not isparsing)
+
     #
     # Parse the log file action event handler
     #
     def __parse(self):
-        self.__toggle_console_display(True)
-        params = self.__get_params_from_UI()
-        # params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
-        flp = log_parser_engine.FolderLogParser(**params)
-        flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime(), self.__ui.date_To.dateTime())
+        self.__stopped = False
+        self.__update_action_states(True)
+        try:
+            self.__toggle_console_display(True)
+            params = self.__get_params_from_UI()
+            # params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
+            flp = log_parser_engine.FolderLogParser(**params)
+            flp.set_progress_callback(self.__progress_callback)
+            flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime())
+        finally:
+            self.__update_action_states(True)
 
     #
     # Show the main window (maximized)

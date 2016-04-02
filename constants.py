@@ -28,6 +28,11 @@ Headers = ListEnum(
 RowTypes = ListEnum(['file', 'session', 'line'])
 
 #
+# Enumerates the info shared to be displayed in a statusbar
+#
+StatusBarValues = ListEnum(['text', 'total_files', 'files_processed', 'total_lines', 'lines_processed', 'lines_to_analyze', 'elapsed_time'])
+
+#
 # Enumerates parameter names used in dict or kwargs to pass from a method/function to another one
 #
 ParamNames = ListEnum(
