@@ -163,6 +163,11 @@ class LogParserMainWindows(object):
         QCoreApplication.processEvents()
         return self.__stopped
 
+    # Callback to let know to the parser that the parsing is cancelled
+    def __cancel_callback(self):
+        QCoreApplication.processEvents()
+        return self.__stopped
+
     # STOP THE PARSING IN PROGRESS
     def __stop(self):
         self.__stopped = True
@@ -221,6 +226,7 @@ class LogParserMainWindows(object):
             # params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
             flp = log_parser_engine.FolderLogParser(**params)
             flp.set_progress_callback(self.__progress_callback)
+            flp.set_cancel_callback(self.__cancel_callback)
             flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime())
         finally:
             self.__update_action_states(False)

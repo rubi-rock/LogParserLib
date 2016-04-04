@@ -5,20 +5,6 @@ import os
 import os_path_helper
 from constants import Headers
 
-'''
-# read a CSV file and load it in a dictonary
-def ReadCSVasDict(csv_file):
-    try:
-        with open(csv_file) as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                print row['Row'], row['Name'], row['Country']
-    except IOError as (errno, strerror):
-            print("I/O error({0}): {1}".format(errno, strerror))
-    return
-'''
-
-
 def WriteParsedLoFileToCSV(parsed_file, csv_file_name):
     try:
         if os.path.isabs(csv_file_name):

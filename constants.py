@@ -21,6 +21,7 @@ ErrorLogLevels = 'OPERATING_SYSTEM|FATAL|EXCEPTION_TRACK|LEAK|STATISTIC|SYST HIG
 #
 Headers = ListEnum(
     ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message', 'context'])
+IndexedHeaders = {x:i+1 for i,x in enumerate(Headers)}
 
 #
 # Enumerates the row type when saving/loading to/from a CSV file
@@ -37,7 +38,7 @@ StatusBarValues = ListEnum(['text', 'total_files', 'files_processed', 'total_lin
 #
 ParamNames = ListEnum(
     ['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date',
-     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context'])
+     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context', 'cancel_callback'])
 
 # Be careful: this one does not use regular expression nor upper or any facilitator for performance reasons.
 # Therefore the text we are looking for must be exactly this one and with this case.

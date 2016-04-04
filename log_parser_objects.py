@@ -20,7 +20,7 @@ class LogContext(list):
         self.__limit = max_lines
 
     def __str__(self):
-        return ' ---- '.join([str(log) for log in self])
+        return '\n'.join([str(log) for log in self])
 
     def __clear(self):
         while len(self) > self.__limit:

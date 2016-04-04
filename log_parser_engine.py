@@ -11,6 +11,7 @@ from log_parser_objects import log_context, Log_Line, ParsedLogFile
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
 import csv_helper
+import xlsx_helper
 
 # from pythonbenchmark import measure
 
@@ -149,6 +150,7 @@ class LogFileParser(object):
     def __init__(self, **params):
         try:
             log_context.clear()
+            self.__cancel_callback = params[ParamNames.cancel_callback]
             self.__lines_processed = 0
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
@@ -244,6 +246,11 @@ class LogFileParser(object):
         try:
             for line in iter(text_file):
                 self.__lines_processed += 1
+
+                if self.__cancel_callback is not None and self.__lines_processed % 100000:
+                    cancelled = self.__cancel_callback()
+                    if cancelled:
+                        break
 
                 if len(line) <= 1:
                     continue
@@ -358,6 +365,7 @@ class FolderLogParser(object):
             self.__stopped = False;
             self.__timer = None
             self.__progress_callback = None
+            self.__cancel_callback = None
             if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
                 log_context.limit = kwargs[ParamNames.provide_context]
             else:
@@ -461,7 +469,8 @@ class FolderLogParser(object):
                       ParamNames.categories: self.__re_categories,
                       ParamNames.performance_trigger_in_ms: self.__performance_trigger_in_ms,
                       ParamNames.filtered_in_levels: self.__filtered_in_levels,
-                      ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date}
+                      ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date,
+                      ParamNames.cancel_callback : self.__cancel_callback}
             log_parser = LogFileParser(**params)
             self.__processed_file_count += 1
             parsed_file = log_parser.parsed_file
@@ -503,6 +512,9 @@ class FolderLogParser(object):
 
     def set_progress_callback(self, callback):
         self.__progress_callback = callback
+
+    def set_cancel_callback(self, callback):
+        self.__cancel_callback = callback
 
     @property
     def parsed_files(self):
@@ -569,7 +581,8 @@ class FolderLogParser(object):
 
     def __save_parsed_file_to_csv(self, parsed_file):
         if self.__save_file_by_file:
-            csv_helper.WriteParsedLoFileToCSV(parsed_file, self.__csv_file_name)
+            #csv_helper.WriteParsedLoFileToCSV(parsed_file, self.__csv_file_name)
+            xlsx_helper.WriteParsedLoFileToXSLX(parsed_file, self.__csv_file_name.replace('csv', 'xlsx'))
             self.__parsed_files.clear()
 
     # Save the log extraction to a CSV file
