@@ -6,7 +6,7 @@ from other_helpers import LogUtility    # keep it even if it seems unused, it se
 
 
 if __name__ == '__main__':
-    command_line.do_it()
+    command_line.show_it()
 
 
 

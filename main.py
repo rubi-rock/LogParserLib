@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit
 from PyQt5.QtWidgets import QTextEdit, QWidget, QDialog, QApplication
+import command_line
 
 
 if __name__ == '__main__':
@@ -29,10 +30,13 @@ if __name__ == '__main__':
         '12': LOG_LEVEL_LIST.SYST_LOW
     }
 
+
+    command_line.do_it()
+
     # parse one file for specific log levels in a specific date range. If the ParamNames.performance_trigger_in_ms general
     # setting is not None or 0, then no need to select the STATISTIC level because it will be processed to identify
     # any performance issue anyway
-    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime(year=2016, month=3, day=1), datetime(year=2016, month=3, day=31))
+#    flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS", log_levels, datetime(year=2016, month=3, day=1), datetime(year=2016, month=3, day=31))
     #flp.parse("/Users/ChristianRocher/Downloads/ACTUEL_TS_LOGS/log - copie/bdobson", log_levels, datetime(year=2016, month=1, day=1), datetime(year=2016, month=3, day=31))
     #flp.parse("/Users/ChristianRocher/Downloads/log", log_levels, datetime(year=2016, month=3, day=10), datetime(year=2016, month=3, day=10))
     #flp.parse("/Users/ChristianRocher/Downloads/log/AJHeafey", log_levels, datetime(year=2016, month=3, day=10), datetime(year=2016, month=3, day=10))
