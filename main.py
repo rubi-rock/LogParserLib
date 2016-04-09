@@ -12,26 +12,25 @@ import command_line
 
 
 if __name__ == '__main__':
-    logging.info("Start")
+    command_line.do_it()
 
     # Instanciate the parser with general settings
     #params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
     #flp = log_parser_engine.FolderLogParser(**params)
-    flp = log_parser_engine.FolderLogParser()
+    #flp = log_parser_engine.FolderLogParser()
 
-    log_levels = {
-        '1': LOG_LEVEL_LIST.OPERATING_SYSTEM,
-        '2': LOG_LEVEL_LIST.FATAL,
-        '3': LOG_LEVEL_LIST.EXCEPTION_TRACK,
-        '4': LOG_LEVEL_LIST.LEAK,
-        # '5': LogLevels.STATISTIC,
-        '10': LOG_LEVEL_LIST.SYST_HIGH,
-        '11': LOG_LEVEL_LIST.SYST_MEDIUM,
-        '12': LOG_LEVEL_LIST.SYST_LOW
-    }
+    #log_levels = {
+    #    '1': LOG_LEVEL_LIST.OPERATING_SYSTEM,
+    #    '2': LOG_LEVEL_LIST.FATAL,
+    #    '3': LOG_LEVEL_LIST.EXCEPTION_TRACK,
+    #    '4': LOG_LEVEL_LIST.LEAK,
+    #    # '5': LogLevels.STATISTIC,
+    #    '10': LOG_LEVEL_LIST.SYST_HIGH,
+    #    '11': LOG_LEVEL_LIST.SYST_MEDIUM,
+    #    '12': LOG_LEVEL_LIST.SYST_LOW
+    #}
 
 
-    command_line.do_it()
 
     # parse one file for specific log levels in a specific date range. If the ParamNames.performance_trigger_in_ms general
     # setting is not None or 0, then no need to select the STATISTIC level because it will be processed to identify
