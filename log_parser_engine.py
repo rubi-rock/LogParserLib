@@ -241,7 +241,7 @@ class LogFileParser(object):
     def __do_parse_file(self, file_name):
         logging.info("Processing file: %s", file_name)
         # required to use latin-1 because logs contain french (i.e.: çéèà...)
-        text_file = open(file_name, mode='rt', encoding='iso-8859-1')
+        text_file = open(file_name, mode='rt', encoding='iso-8859-1')   # same as latin-1
         try:
             for line in iter(text_file):
                 self.__lines_processed += 1
@@ -391,6 +391,7 @@ class FolderLogParser(object):
             self.__lines_to_analyze_count = 0
             self.__last_logfile_lines_parsed = 0
             self.__filtered_in_levels = DEFAULT_LOG_LEVELS
+            self.__stats = []
         except Exception:
             logging.exception('')
             raise
@@ -415,6 +416,10 @@ class FolderLogParser(object):
     @property
     def to_date(self):
         return self.__max_date
+
+    @property
+    def stats(self):
+        return self.__stats
 
     def filter_on_date(self, log_file_info_to_filter):
         try:
@@ -444,6 +449,7 @@ class FolderLogParser(object):
 
     def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None):
         try:
+            self.__stats = []
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
             self.__root_parth = root_path
@@ -466,6 +472,9 @@ class FolderLogParser(object):
             raise
 
     def __provide_feedback(self, **kwargs):
+        if StatusBarValues.text in kwargs.keys():
+            self.__stats.append(kwargs[StatusBarValues.text])
+
         if self.__progress_callback is not None:
             if self.__timer is not None:
                 kwargs[StatusBarValues.elapsed_time] = self.__timer.time_to_str

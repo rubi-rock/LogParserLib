@@ -129,6 +129,13 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="10">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>previous lines</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="9">
            <widget class="QSpinBox" name="spin_contextLOL">
             <property name="maximum">
@@ -185,12 +192,18 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="10">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>previous lines</string>
+          <item row="0" column="11">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
-           </widget>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>

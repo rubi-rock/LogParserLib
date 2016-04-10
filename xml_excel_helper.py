@@ -26,7 +26,7 @@ def get_cell_format(column_name):
 class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
-        self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 4, 'border_color': 'EEEEEE'}
+        self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'FFFFFF'}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
         self.__time_format = {'num_format': 'hh:mm:ss.000;@'}
         self.__file_style =  {'bold': True, 'bg_color': '0066cc', 'font_color': 'white'}
@@ -112,10 +112,9 @@ class LogXlsxWriter(object):
         header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
         self.__worksheet.set_header(header)
 
-        header_style = self.__workbook.add_format({'bold': True, 'bg_color': '000000', 'font_color': 'white', 'align': 'center'})
+        header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
         for header in Headers:
             self.__worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
-
         self.__row_count += 1
 
 
@@ -147,6 +146,16 @@ class LogXlsxWriter(object):
         self.append_row(line_as_csv, RowTypes.line, StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
         self.__row_count += 1
 
+    def __add_stats(self):
+        stats_worksheet = self.__workbook.add_worksheet('Statistics')
+        stats_worksheet.tab_color = "96FF33"
+        stats_worksheet.set_column('A:A', 200)
+        rowpos= 0
+        for stat in self.__log_folder_parser.stats:
+            stats_worksheet.write(rowpos, 0, str(stat))
+            rowpos += 1
+
+
     def close(self):
         self.__worksheet.set_column('A:A', 40)
         self.__worksheet.set_column('B:C', 12)
@@ -156,6 +165,8 @@ class LogXlsxWriter(object):
         self.__worksheet.set_column('L:L', 80)
 
         self.__worksheet.autofilter(0, 0, self.__log_folder_parser.files_and_sessions_and_lines_count , len(Headers) - 1)
+
+        self.__add_stats()
 
         self.__workbook.close()
 
@@ -173,7 +184,7 @@ def __clean_up_text_for_excel(text):
 #
 def GetOutputXlsxFileName(xlsx_file_name=None):
     if xlsx_file_name is None:
-        xlsx_file_name = os_path_helper.generate_file_name(None, '.xlsx')
+        xlsx_file_name = os_path_helper.generate_file_name('Log Compilation - ', '.xlsx')
     elif not os.path.isabs(xlsx_file_name):
         xlsx_file_name = os.path.join(os.path.curdir, xlsx_file_name)
     if not xlsx_file_name.endswith('.xlsx'):
