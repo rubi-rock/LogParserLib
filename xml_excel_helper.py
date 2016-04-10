@@ -26,16 +26,14 @@ def get_cell_format(column_name):
 class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
-        self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 4, 'border_color': '9DD9FF'}
+        self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 4, 'border_color': 'EEEEEE'}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
         self.__time_format = {'num_format': 'hh:mm:ss.000;@'}
-        self.__file_style =  {'bold': True, 'bg_color': '1F9BCC', 'font_color': 'white'}
-        self.__file_style_date = {'num_format': 'yyyy-mm-dd', 'bold': True, 'bg_color': '1F9BCC', 'font_color': 'white'}
-        self.__file_style_time =  {'bold': True, 'bg_color': '1F9BCC', 'font_color': 'white'}
-        self.__session_style = {'italic': True, 'bg_color': '588799', 'font_color': 'white'}
-        self.__crahsed_style = {'italic': True, 'bg_color': 'CC0F34', 'font_color': 'white'}
-        self.__alt_color_1 = {'bg_color': 'B3FFC6', 'font_color': 'black'}
-        self.__alt_color_2 = {'bg_color': '97E89C', 'font_color': 'black'}
+        self.__file_style =  {'bold': True, 'bg_color': '0066cc', 'font_color': 'white'}
+        self.__session_style = {'italic': True, 'bg_color': '80bfff', 'font_color': 'black'}
+        self.__crahsed_style = {'italic': True, 'bg_color': 'ff9900', 'font_color': 'white'}
+        self.__alt_color_1 = {'bg_color': 'ffffb3', 'font_color': 'black'}
+        self.__alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'black'}
         self.__styles =  { RowTypes.file:
                             {
                                 StyleType.default : {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None},
@@ -114,9 +112,9 @@ class LogXlsxWriter(object):
         header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
         self.__worksheet.set_header(header)
 
-        header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
+        header_style = self.__workbook.add_format({'bold': True, 'bg_color': '000000', 'font_color': 'white', 'align': 'center'})
         for header in Headers:
-            self.__worksheet.write(self.__cell_coord(header, None), header, header_style)
+            self.__worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
 
         self.__row_count += 1
 
@@ -167,18 +165,25 @@ class LogXlsxWriter(object):
 #
 def __clean_up_text_for_excel(text):
     # because of the french text and xml encoding
-    return str(text.replace('\n\n', '\n')) #.encode('latin-1')
+    return str(text.replace('\n\n', '\n'))
 
 
 #
 #
 #
+def GetOutputXlsxFileName(xlsx_file_name=None):
+    if xlsx_file_name is None:
+        xlsx_file_name = os_path_helper.generate_file_name(None, '.xlsx')
+    elif not os.path.isabs(xlsx_file_name):
+        xlsx_file_name = os.path.join(os.path.curdir, xlsx_file_name)
+    if not xlsx_file_name.endswith('.xlsx'):
+        xlsx_file_name = xlsx_file_name + '.xlsx'
+    return xlsx_file_name
+
+
 def WriteLogFolderParserToXSLX(log_folder_parser, xlsx_file_name=None):
     try:
-        if xlsx_file_name is None:
-            xlsx_file_name = os_path_helper.generate_file_name(None)
-        elif not os.path.isabs(xlsx_file_name):
-            xlsx_file_name = os.path.join(os.path.curdir, xlsx_file_name)
+        xlsx_file_name = GetOutputXlsxFileName(xlsx_file_name)
 
         # Create a workbook and add a worksheet.
         writer = LogXlsxWriter(log_folder_parser, xlsx_file_name)

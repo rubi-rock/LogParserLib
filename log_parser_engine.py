@@ -7,12 +7,10 @@ import os_path_helper
 import other_helpers
 import xml_excel_helper
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
-    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
+    DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
 from log_parser_objects import log_context, Log_Line, ParsedLogFile
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
-import csv_helper
-import xlsx_helper
 
 # from pythonbenchmark import measure
 
@@ -377,9 +375,6 @@ class FolderLogParser(object):
             self.__max_date = MAX_DATE
             self.__log_file_info_list = []
             self.__parsed_files = []
-            self.__save_file_by_file = kwargs[
-                ParamNames.save_file_by_file] if ParamNames.save_file_by_file in kwargs.keys() \
-                else SAVE_FILE_BY_FILE
             self.__performance_trigger_in_ms = kwargs[
                 ParamNames.performance_trigger_in_ms] if ParamNames.performance_trigger_in_ms in kwargs.keys() \
                 else DEFAULT_PERFORMANCE_TRIGGER_IN_MS
@@ -447,13 +442,14 @@ class FolderLogParser(object):
             logging.exception('')
             raise
 
-    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE):
+    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None):
         try:
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
             self.__root_parth = root_path
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
+            self.__output = output
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
             log_text = "{0} files found:".format(len(self.__log_file_info_list))
@@ -461,8 +457,8 @@ class FolderLogParser(object):
             self.__provide_feedback(**{StatusBarValues.text: log_text})
 
             for log_file in self.__log_file_info_list:
-                logging.info(log_file.fullname)
-                self.__provide_feedback(**{StatusBarValues.text: log_file.fullname})
+                logging.info( '\t' + log_file.fullname)
+                self.__provide_feedback(**{StatusBarValues.text: '\t' + log_file.fullname})
 
             self.do_parse_files()
         except Exception:
@@ -496,13 +492,13 @@ class FolderLogParser(object):
             if len(parsed_file.sessions) > 0:
                 self.__parsed_files.append(parsed_file)
             else:
-                log_text = "\t{0} does not contains any lines to analyze".format(parsed_file.parsed_file_info.fullname)
+                log_text = "\tDone: {0} does not contains any lines to analyze".format(parsed_file.parsed_file_info.fullname)
                 logging.info(log_text)
                 self.__provide_feedback(**{StatusBarValues.text: log_text})
 
             self.__lines_parsed += log_parser.lines_processed
 
-            log_text = "\tDone {0} - {1}/{2} lines parsed - {3}/{4} files. CPU Time: {5} sec., {6} new lines to analyze from this file.".format(
+            log_text = "\tDone: {0} - {1}/{2} lines parsed - {3}/{4} files. CPU Time: {5} sec., {6} new lines to analyze from this file.".format(
                 parsed_file.parsed_file_info.fullname,
                 log_parser.lines_processed,
                 self.lines_parsed,
@@ -563,14 +559,15 @@ class FolderLogParser(object):
         self.__timer = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
-            logging.info("Start processing log files...")
+            log_text = "Start processing log files..."
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
+            logging.info(log_text)
             self.__files_processed = 0
             for file_info in self.__log_file_info_list:
                 try:
                     parsed_file = self.parse_one_file(file_info)
                     if parsed_file is not None:
                         self.__lines_to_analyze_count += parsed_file.lines_count
-                        self.__save_parsed_file_to_csv(parsed_file)
                     if self.__stopped:
                         break
                 except Exception:
@@ -594,35 +591,29 @@ class FolderLogParser(object):
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
 
-            if not self.__save_file_by_file:
-                self.save_to_csv_file()
+            self.save_result_to_xlsx_file(self.__output)
         except Exception:
             logging.exception('')
             raise
 
-    def __save_parsed_file_to_csv(self, parsed_file):
-        if self.__save_file_by_file:
-            csv_helper.WriteParsedLoFileToCSV(parsed_file, self.__csv_file_name)
-            #xlsx_helper.WriteParsedLoFileToXSLX(parsed_file, self.__csv_file_name.replace('csv', 'xlsx'))
-            self.__parsed_files.clear()
-
     # Save the log extraction to a CSV file
-    def save_to_csv_file(self, xslx_file_name=None):
-        if xslx_file_name is None:
-            xslx_file_name = os_path_helper.generate_file_name('log-files-parsed - ') + '.xlsx'
-
+    def save_result_to_xlsx_file(self, xslx_file_name=None):
         et = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
             xslx_file_name = xml_excel_helper.WriteLogFolderParserToXSLX(self, xslx_file_name)
 
-            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
-                time_per_line = pt.time / self.total_lines_to_analyze if self.total_lines_to_analyze > 0 else 0
-                logging.info("Saved in CSV file {0}".format(xslx_file_name))
-                logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
-                    et.time_to_str,
-                    time_per_line * 1000,
-                    round(60 * self.total_lines_to_analyze / (pt.time if pt.time > 0 else 1))))
+            time_per_line = pt.time / self.total_lines_to_analyze if self.total_lines_to_analyze > 0 else 0
+            log_text = "Saved in CSV file {0}".format(xslx_file_name)
+            logging.info(log_text)
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
+
+            log_text = "Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
+                et.time_to_str,
+                time_per_line * 1000,
+                round(60 * self.total_lines_to_analyze / (pt.time if pt.time > 0 else 1)))
+            logging.info(log_text)
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
         except Exception:
             logging.exception('')
             raise

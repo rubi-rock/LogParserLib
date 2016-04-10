@@ -76,7 +76,8 @@ def create_folder_if_doest_not_exists(folder_name):
             logging.exception("Unable to find or create the folder " + folder_name, e)
             sys.exit()
 
-def generate_file_name(prefix='', path = os.path.curdir):
-    filename = '%s.csv' % datetime.now().strftime('%Y%m%d-%H%M%S')
+def generate_file_name(prefix='', extension = '.tmp', path = os.path.curdir):
+    filename = '%s' % datetime.now().strftime('%Y%m%d-%H%M%S')
     filename = prefix + filename if prefix is not None and prefix != '' else filename
+    filename = filename + extension if extension is not None and extension != '' else filename
     return os.path.join(path, filename)

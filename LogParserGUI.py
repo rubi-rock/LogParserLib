@@ -13,11 +13,12 @@ import log_parser_engine
 
 # Keep it - required for the icons on the buttons of the main form
 import icons_rc
+from xml_excel_helper import GetOutputXlsxFileName
 
 SPLITTER_MIN_SIZE = 30
 
 class LogParserMainWindows(object):
-    def __init__(self, path=None, fromdate=None, todate=None):
+    def __init__(self, path=None, fromdate=None, todate=None, output=None):
         self.__app = QtWidgets.QApplication(sys.argv)
         self.__mainwindow = QtWidgets.QMainWindow()
         self.__ui = LogParserMainWindow.Ui_MainWindow()
@@ -28,7 +29,6 @@ class LogParserMainWindows(object):
         self.__stopped = False
         self.__console_scrollbar = self.__ui.edt_console.verticalScrollBar()
         self.__init_statusbar()
-        self.__ui.treeWidget_Results.clear()
 
         if path is not None:
             self.__ui.edt_Path.setText(path)
@@ -36,6 +36,7 @@ class LogParserMainWindows(object):
             self.__ui.date_From.setDate( QtCore.QDate.fromString(str(fromdate), 'yyyy-MM-dd'))
         if todate is not None:
             self.__ui.date_To.setDate(QtCore.QDate.fromString(str(todate), 'yyyy-MM-dd'))
+        self.__ui.edt_output.setText(GetOutputXlsxFileName(output))
 
     # Init the form with required data (or config)
     def __init_UI(self):
@@ -80,20 +81,6 @@ class LogParserMainWindows(object):
     # Initialization of the UI
     #
 
-    # Show or hide the console region (toggle)
-    def __toggle_console_display(self, show = None):
-        if show is None:
-            self.__ui.frame_console.setVisible(not self.__ui.frame_console.isVisible())
-        else:
-            self.__ui.frame_console.setVisible(show)
-
-        icon = QtGui.QIcon()
-        if self.__ui.frame_console.isVisible():
-            icon.addPixmap(QtGui.QPixmap(":/icons/arrow-down-16.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        else:
-            icon.addPixmap(QtGui.QPixmap(":/icons/arrow-up-16.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.__ui.btn_toggleConsole.setIcon(icon)
-
     # Load exclusions on screen
     def __init_exclusions(self):
         self.__ui.edt_Exclusions.clear()
@@ -129,7 +116,6 @@ class LogParserMainWindows(object):
         self.__ui.btn_SelectDir.clicked.connect(self.__select_Dir)
         self.__ui.edt_Path.textChanged.connect(self.__edt_path_changed)
         self.__ui.actionParse.triggered.connect(self.__parse)
-        self.__ui.btn_toggleConsole.clicked.connect(self.__toggle_console_clicked)
         self.__ui.actionStop.triggered.connect(self.__stop)
 
 
@@ -149,10 +135,6 @@ class LogParserMainWindows(object):
     # Path field changed event handler
     def __edt_path_changed(self, text):
         self.__ui.actionParse.setEnabled(os.path.exists(text))
-
-    # Toggle console view event hendler
-    def __toggle_console_clicked(self):
-        self.__toggle_console_display()
 
     # Callback to display progresses
     def __progress_callback(self, **kwargs):
@@ -210,9 +192,7 @@ class LogParserMainWindows(object):
         self.__ui.actionClean_logs.setEnabled(not isparsing)
         self.__ui.actionSelect_Folder.setEnabled(not isparsing)
         self.__ui.actionLoad_config_from_file.setEnabled(not isparsing)
-        self.__ui.actionLoad_Results_from_CSV.setEnabled(not isparsing)
         self.__ui.actionSave_config_to_file.setEnabled(not isparsing)
-        self.__ui.actionSave_Results_to_CSV.setEnabled(not isparsing)
 
     #
     # Parse the log file action event handler
@@ -221,13 +201,12 @@ class LogParserMainWindows(object):
         self.__stopped = False
         self.__update_action_states(True)
         try:
-            self.__toggle_console_display(True)
             params = self.__get_params_from_UI()
             # params = {ParamNames.exclusions: exclusions, ParamNames.categories: categories, ParamNames.performance_trigger_in_ms: 3500, ParamNames.provide_context: 10}
             flp = log_parser_engine.FolderLogParser(**params)
             flp.set_progress_callback(self.__progress_callback)
             flp.set_cancel_callback(self.__cancel_callback)
-            flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime())
+            flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime(), self.__ui.edt_output.text())
         finally:
             self.__update_action_states(False)
 

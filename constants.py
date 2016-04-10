@@ -140,8 +140,5 @@ DEFAULT_CATEGORIES = OrderedDict([
 PERFORMANCE_TRIGGER_OFF = None
 DEFAULT_PERFORMANCE_TRIGGER_IN_MS = 3500
 
-# Default save:
-SAVE_FILE_BY_FILE = False
-
 # DEfault context lengyh (line amount)
 DEFAULT_CONTEXT_LENGTH = 20
