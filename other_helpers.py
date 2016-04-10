@@ -3,7 +3,7 @@ import logging
 import datetime
 import time
 from enum import Enum
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 import cProfile
 
 from os_path_helper import create_folder_if_doest_not_exists
@@ -163,8 +163,9 @@ class ElapseTimer(object):
 class DictEnum(OrderedDict):
     # Initialize the dict from another one containing the enum list Names & values, plus publish all keys as properties
     # directly available from this object
-    def __init__(self, enum_list):
+    def __init__(self, enum_list, *args, **kwds):
         # load the list
+        super().__init__(*args, **kwds)
         if type(enum_list) is dict or type(enum_list) is OrderedDict:
             self.update(enum_list)
         elif type(enum_list) is tuple or type(enum_list) is list:
@@ -187,6 +188,7 @@ class ListEnum(list):
     # directly available from this object
     def __init__(self, enum_list):
         # keep a trace of the list for the 'as_list' operator
+        super().__init__()
         self.__enum_list = enum_list
         # load the list
         for name in enum_list:

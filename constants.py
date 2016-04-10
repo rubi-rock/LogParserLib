@@ -10,18 +10,20 @@ MAX_DATE = datetime(year=2100, month=12, day=31)
 #
 LOG_LEVEL_LIST = ListEnum(
     [  # Standard log levels
-        'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'ACTION', 'TRACE', 'DUMP',
+        'LOG', 'OPERATING_SYSTEM', 'FATAL', 'EXCEPTION_TRACK', 'LEAK', 'WARNING', 'STATISTIC', 'ACTION', 'TRACE',
+        'DUMP',
         'MESSAGES', 'UNKNOWN',
         # Map log levels
-        'SYST HIGH', 'SYST MEDIUM', 'SYST LOW', 'SYST', 'DEBUG'])   # Mapgen also has a LOG level, we don't duplicate it
+        'SYST HIGH', 'SYST MEDIUM', 'SYST LOW', 'SYST', 'DEBUG'])  # Mapgen also has a LOG level, we don't duplicate it
 ErrorLogLevels = 'OPERATING_SYSTEM|FATAL|EXCEPTION_TRACK|LEAK|STATISTIC|SYST HIGH|SYST MEDIUM'
 
 #
 # Enumarates columns manipulated by the log parser for each session or log line
 #
 Headers = ListEnum(
-    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message', 'context'])
-IndexedHeaders = {x:i+1 for i,x in enumerate(Headers)}
+    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message',
+     'context'])
+IndexedHeaders = {x: i + 1 for i, x in enumerate(Headers)}
 
 #
 # Enumerates the row type when saving/loading to/from a CSV file
@@ -31,7 +33,8 @@ RowTypes = ListEnum(['file', 'session', 'line'])
 #
 # Enumerates the info shared to be displayed in a statusbar
 #
-StatusBarValues = ListEnum(['text', 'total_files', 'files_processed', 'total_lines', 'lines_processed', 'lines_to_analyze', 'elapsed_time'])
+StatusBarValues = ListEnum(
+    ['text', 'total_files', 'files_processed', 'total_lines', 'lines_processed', 'lines_to_analyze', 'elapsed_time'])
 
 #
 # Enumerates parameter names used in dict or kwargs to pass from a method/function to another one
@@ -49,7 +52,6 @@ DefaultSessionInfo = [
     'CurrentConfig',
     'Active ConfigGroup:'
 ]
-
 
 DEFAULT_EXCLUSIONS = OrderedDict([
     ('1', 'BEGIN SESSION'),
@@ -81,7 +83,8 @@ DEFAULT_EXCLUSIONS = OrderedDict([
     ('47', '* Context * '),
     ('48', 'Active ConfigGroup:'),
     # EXTENSIONS EXCLUSIONS
-    ('100', 'REGEX=\[TXMLDataRecordProviderTool::TXMLDataRecordProviderTool.Create\] Module not found : "(.*)\\bin\\sqimDossierAdapterDispense\.dll"'),
+    ('100',
+     'REGEX=\[TXMLDataRecordProviderTool::TXMLDataRecordProviderTool.Create\] Module not found : "(.*)\\bin\\sqimDossierAdapterDispense\.dll"'),
     ('101', '//Concurrent access'),
     ('102', "REGEX=(\w+)\.Edit\-\>L'enregistrement est d.j. en mode .dition par(.*)"),
     ('103', "Active ConfigGroup: "),
@@ -93,7 +96,7 @@ DEFAULT_EXCLUSIONS = OrderedDict([
     ('154', 'Allow Open Retries:'),
     ('155', 'TMapObject.Create... (Alias='),
     ('156', 'Pooling Enabled:)')
-    ])
+])
 
 DEFAULT_LOG_LEVELS = OrderedDict([
     ('1', LOG_LEVEL_LIST.OPERATING_SYSTEM),
@@ -103,7 +106,7 @@ DEFAULT_LOG_LEVELS = OrderedDict([
     ('10', LOG_LEVEL_LIST.SYST_HIGH),
     ('11', LOG_LEVEL_LIST.SYST_MEDIUM),
     ('12', LOG_LEVEL_LIST.SYST_LOW)
-    ])
+])
 
 DEFAULT_CATEGORIES = OrderedDict([
     # Check for Client Files issues
@@ -120,7 +123,8 @@ DEFAULT_CATEGORIES = OrderedDict([
     ('50.MAPGEN', 'REGEX=Exception(.*)Mapgen\.dll(.*)'),
     # Storage issue
     ('60.STORAGE', 'REGEX=Exception EFCreateError in module(.*)Cannot create file(.*)'),
-    ('61.STORAGE', 'REGEX=Exception EAbstractExternalObj in module(.*)Error into external storage extension module : Cannot create file(.*)'),
+    ('61.STORAGE',
+     'REGEX=Exception EAbstractExternalObj in module(.*)Error into external storage extension module : Cannot create file(.*)'),
     # Access violations & Exceptions - excluding those already categorized in previous categories
     ('70.EXCEPTIONS', 'REGEX=Access violation at address ([A-F0-9]{8})(.*)'),
     ('71.EXCEPTIONS', 'Exception'),
@@ -129,8 +133,7 @@ DEFAULT_CATEGORIES = OrderedDict([
     ('91.WINDOWS LOGON', 'REGEX=Can not load(.*)\\WindowsLogonProvider\.dll'),
     # Transactions
     ('100.TRANSACTION', '(Transaction Rollback)')
-    ])
-
+])
 
 # Default performance trigger in ms: when none it ignores statistics, else it looks at it and keep only what is higher
 # than specified
@@ -138,7 +141,7 @@ PERFORMANCE_TRIGGER_OFF = None
 DEFAULT_PERFORMANCE_TRIGGER_IN_MS = 3500
 
 # Default save:
-SAVE_FILE_BY_FILE = True
+SAVE_FILE_BY_FILE = False
 
 # DEfault context lengyh (line amount)
 DEFAULT_CONTEXT_LENGTH = 20

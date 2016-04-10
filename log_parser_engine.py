@@ -1,10 +1,11 @@
 import logging
 import os.path
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import os_path_helper
 import other_helpers
+import xml_excel_helper
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
     DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, SAVE_FILE_BY_FILE, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
 from log_parser_objects import log_context, Log_Line, ParsedLogFile
@@ -131,7 +132,6 @@ DETAILLED_LOGGING_SESSION = 2  # details of the file (sessions & lines preserved
 DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_NONE
 
 
-
 #
 # Instance of a log session : between 'BEGIN SESSION' and 'END SESSION'
 #
@@ -208,7 +208,8 @@ class LogFileParser(object):
         return None
 
     # Split a log line in its components (date, time, level, [module], message)
-    def __split_line(self, line):
+    @staticmethod
+    def __split_line(line):
         try:
             log_dict = LogLineSplitter.low_level_parse_log_line(line)
             return Log_Line(log_dict)
@@ -241,8 +242,8 @@ class LogFileParser(object):
     #
     def __do_parse_file(self, file_name):
         logging.info("Processing file: %s", file_name)
-        text_file = open(file_name, mode='rt',
-                         encoding='latin-1')  # required to use latin-1 because logs contain french (i.e.: çéèà...)
+        # required to use latin-1 because logs contain french (i.e.: çéèà...)
+        text_file = open(file_name, mode='rt', encoding='iso-8859-1')
         try:
             for line in iter(text_file):
                 self.__lines_processed += 1
@@ -289,7 +290,7 @@ class LogFileParser(object):
         log_context.append(line)
 
         if self.__process_session(log_line_dict):
-            return True   # because it was BEGIN SESSION or END SESSION
+            return True  # because it was BEGIN SESSION or END SESSION
 
         if self.__extract_session_info(log_line_dict):
             return True  # because it was about the session info
@@ -327,7 +328,6 @@ class LogFileParser(object):
         self.__parsed_file.open_session(log_dict)
         self.__session_opened = True
 
-
     def add_misaligned_ended_session(self, log_dict):
         self.__parsed_file.add_misaligned_ended_session(log_dict)
 
@@ -362,7 +362,7 @@ class FolderLogParser(object):
     # @measure
     def __init__(self, **kwargs):
         try:
-            self.__stopped = False;
+            self.__stopped = False
             self.__timer = None
             self.__progress_callback = None
             self.__cancel_callback = None
@@ -372,6 +372,7 @@ class FolderLogParser(object):
                 log_context.limit = DEFAULT_CONTEXT_LENGTH
             self.__csv_file_name = os_path_helper.generate_file_name('log-files-parsed - ')
             self.__processed_file_count = 0
+            self.__root_parth = ""
             self.__min_date = MIN_DATE
             self.__max_date = MAX_DATE
             self.__log_file_info_list = []
@@ -394,6 +395,7 @@ class FolderLogParser(object):
             self.__lines_parsed = 0
             self.__lines_to_analyze_count = 0
             self.__last_logfile_lines_parsed = 0
+            self.__filtered_in_levels = DEFAULT_LOG_LEVELS
         except Exception:
             logging.exception('')
             raise
@@ -402,6 +404,22 @@ class FolderLogParser(object):
     @property
     def log_file_info_list(self):
         return self.__log_file_info_list
+
+    @property
+    def files_and_sessions_and_lines_count(self):
+        return len(self.parsed_files) + self.sessions_count + self.total_lines_to_analyze
+
+    @property
+    def folder(self):
+        return self.__root_parth
+
+    @property
+    def from_date(self):
+        return self.__min_date
+
+    @property
+    def to_date(self):
+        return self.__max_date
 
     def filter_on_date(self, log_file_info_to_filter):
         try:
@@ -433,13 +451,14 @@ class FolderLogParser(object):
         try:
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
+            self.__root_parth = root_path
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
             log_text = "{0} files found:".format(len(self.__log_file_info_list))
             logging.info(log_text)
-            self.__provide_feedback(**{StatusBarValues.text : log_text})
+            self.__provide_feedback(**{StatusBarValues.text: log_text})
 
             for log_file in self.__log_file_info_list:
                 logging.info(log_file.fullname)
@@ -470,7 +489,7 @@ class FolderLogParser(object):
                       ParamNames.performance_trigger_in_ms: self.__performance_trigger_in_ms,
                       ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date,
-                      ParamNames.cancel_callback : self.__cancel_callback}
+                      ParamNames.cancel_callback: self.__cancel_callback}
             log_parser = LogFileParser(**params)
             self.__processed_file_count += 1
             parsed_file = log_parser.parsed_file
@@ -500,7 +519,7 @@ class FolderLogParser(object):
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_SESSION:
-                    logging.info(str(parsed_file))
+                logging.info(str(parsed_file))
 
             if len(parsed_file.sessions) > 0:
                 return parsed_file
@@ -528,10 +547,9 @@ class FolderLogParser(object):
     def total_lines_to_analyze(self):
         return self.__lines_to_analyze_count
 
-
     @property
     def sessions_count(self):
-        return sum(len(x.sessions) for x in self.parsed_files)
+        return sum(x.session_count for x in self.parsed_files)
 
     @property
     def preserved_files_count(self):
@@ -575,29 +593,32 @@ class FolderLogParser(object):
 
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
+
+            if not self.__save_file_by_file:
+                self.save_to_csv_file()
         except Exception:
             logging.exception('')
             raise
 
     def __save_parsed_file_to_csv(self, parsed_file):
         if self.__save_file_by_file:
-            #csv_helper.WriteParsedLoFileToCSV(parsed_file, self.__csv_file_name)
-            xlsx_helper.WriteParsedLoFileToXSLX(parsed_file, self.__csv_file_name.replace('csv', 'xlsx'))
+            csv_helper.WriteParsedLoFileToCSV(parsed_file, self.__csv_file_name)
+            #xlsx_helper.WriteParsedLoFileToXSLX(parsed_file, self.__csv_file_name.replace('csv', 'xlsx'))
             self.__parsed_files.clear()
 
     # Save the log extraction to a CSV file
-    def save_to_csv_file(self, csv_file_name=None):
-        if csv_file_name == None:
-            csv_file_name = os_path_helper.generate_file_name('log-files-parsed - ')
+    def save_to_csv_file(self, xslx_file_name=None):
+        if xslx_file_name is None:
+            xslx_file_name = os_path_helper.generate_file_name('log-files-parsed - ') + '.xlsx'
 
         et = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
-            csv_file_name = csv_helper.WriteLogFolderParserToCSV(self, csv_file_name)
+            xslx_file_name = xml_excel_helper.WriteLogFolderParserToXSLX(self, xslx_file_name)
 
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 time_per_line = pt.time / self.total_lines_to_analyze if self.total_lines_to_analyze > 0 else 0
-                logging.info("Saved in CSV file {0}".format(csv_file_name))
+                logging.info("Saved in CSV file {0}".format(xslx_file_name))
                 logging.info("Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                     et.time_to_str,
                     time_per_line * 1000,

@@ -1,8 +1,7 @@
+import csv
 import openpyxl
-from openpyxl import cell
 import logging
 import os
-import re
 
 import os_path_helper
 from constants import Headers, IndexedHeaders
@@ -25,24 +24,6 @@ def InitializeWorkbook(workbook, create_mode):
 
     return worksheet, row_count
 
-    '''
-        # dump the file
-        file_name = parsed_file.parsed_file_info.fullname
-        writer.writerow(parsed_file.as_csv_row)
-        # dump the sessions
-        for session in parsed_file.sessions:
-            row = session.as_csv_row
-            row[Headers.file] = file_name
-            writer.writerow(row)
-            # dump the lines
-            for line in session.lines:
-                row = line.as_csv_row
-                row[Headers.file] = file_name
-                row[Headers.message] = row[Headers.message].encode('latin-1')       # because of the french text
-                row[Headers.context] = row[Headers.context].encode('latin-1')       # because of the french text
-                row[Headers.session] = session.session_id
-                writer.writerow(row)
-    '''
 
 def add_row(worksheet, row_count, row):
     row_count += 1
@@ -55,6 +36,7 @@ def add_row(worksheet, row_count, row):
     return row_count
 
 
+# Never tested...!!!
 def WriteParsedLoFileToXSLX(parsed_file, xlsx_file_name):
     try:
         if os.path.isabs(xlsx_file_name):
@@ -62,7 +44,7 @@ def WriteParsedLoFileToXSLX(parsed_file, xlsx_file_name):
 
         create_mode = not os.path.exists(xlsx_file_name)
         if create_mode:
-            workbook = openpyxl.Workbook(encoding='latin-1')
+            workbook = openpyxl.Workbook(encoding='liso-8859-1')
         else:
             workbook = openpyxl.load_workbook(xlsx_file_name)
 
@@ -95,9 +77,9 @@ def WriteLogFolderParserToXSLX(log_folder_parser, xlsx_file_name=None):
         if xlsx_file_name is None:
             xlsx_file_name = os_path_helper.generate_file_name(None)
         elif not os.path.isabs(xlsx_file_name):
-            csv_file_name = os.path.join(os.path.curdir, xlsx_file_name)
+            xlsx_file_name = os.path.join(os.path.curdir, xlsx_file_name)
 
-        with open(csv_file_name, 'w') as csvfile:
+        with open(xlsx_file_name, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, delimiter=',', extrasaction='ignore', quoting=csv.QUOTE_ALL,
                                     fieldnames=Headers)
             writer.writeheader()
@@ -120,6 +102,6 @@ def WriteLogFolderParserToXSLX(log_folder_parser, xlsx_file_name=None):
                         row[Headers.session] = session.session_id
                         writer.writerow(row)
 
-        return csv_file_name
+        return xlsx_file_name
     except Exception:
         logging.exception('')

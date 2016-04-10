@@ -16,7 +16,8 @@ UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
 #   Log context: a log line list that came before a log entry that has been selected to be part of the resulting analysis
 #
 class LogContext(list):
-    def __init__(self, max_lines = DEFAULT_CONTEXT_LENGTH):
+    def __init__(self, max_lines=DEFAULT_CONTEXT_LENGTH):
+        super().__init__()
         self.__limit = max_lines
 
     def __str__(self):
@@ -293,6 +294,10 @@ class ParsedLogFile(object):
     @property
     def sessions(self):
         return self.__sessions
+
+    @property
+    def session_count(self):
+        return len(self.__sessions)
 
     # Returns the line count - all file's sessions together
     @property

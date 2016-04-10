@@ -23,16 +23,16 @@ def measure(method):
             start = time.clock()
             #run the function and save the result
             result = method(*args, **kwargs)
-            run_time = time.clock() - start
-            print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, run_time))
+            elapsed_time = time.clock() - start
+            print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, elapsed_time))
 
         else:
             # On non Windows platforms the best timer is time.time
             start = time.time()
             #run the function and save the result
             result = method(*args, **kwargs)
-            run_time = time.time() - start
-            print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, run_time))
+            elapsed_time = time.time() - start
+            print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, elapsed_time))
 
         return result
     return run
@@ -45,7 +45,7 @@ def run_time(method,*args, **kwargs):
         start = time.clock()
         #run the function and save the result
         result = method(*args, **kwargs)
-        run_time = time.clock() - start
+        elapsed_time = time.clock() - start
         #print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, run_time))
 
     else:
@@ -53,10 +53,10 @@ def run_time(method,*args, **kwargs):
         start = time.time()
         #run the function and save the result
         result = method(*args, **kwargs)
-        run_time = time.time() - start
+        elapsed_time = time.time() - start
         #print('%r (%r, %r) %2.20f sec' % (method.__name__, args, kwargs, run_time))
 
-    return run_time
+    return elapsed_time
 
 
 def compare(functionA, functionB, times_average, *args, **kwargs):

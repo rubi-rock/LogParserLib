@@ -7,7 +7,8 @@ from constants import Headers, LOG_LEVEL_LIST
 
 
 class PreparedExpressionList(dict):
-    def __init__(self, exp_list=None):
+    def __init__(self, exp_list=None, **kwargs):
+        super().__init__(**kwargs)
         self.__expr_list = {}
         self.__prepared_expressions = {}
         self.__prepared_plain_text = {}
