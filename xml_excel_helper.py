@@ -11,7 +11,7 @@ from other_helpers import ListEnum
 #
 # Enumerates the row type when saving/loading to/from a CSV file
 #
-CellFormat = ListEnum(['default', Headers.date, Headers.time])
+CellFormat = ListEnum(['default', Headers.file, Headers.date, Headers.time])
 StyleType = ListEnum(['default', 'crashed', 'alt1', 'alt2'])
 RowLevels = { RowTypes.file: {'level': 0, 'collapsed': True}, RowTypes.session: {'level': 1}, RowTypes.line: {'level': 2}}
 
@@ -27,6 +27,7 @@ class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
         self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'FFFFFF'}
+        self.__hyperlink_style = {'underline': 1}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
         self.__time_format = {'num_format': 'hh:mm:ss.000;@'}
         self.__file_style =  {'bold': True, 'bg_color': '0066cc', 'font_color': 'white'}
@@ -36,17 +37,17 @@ class StyleManager(object):
         self.__alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'black'}
         self.__styles =  { RowTypes.file:
                             {
-                                StyleType.default : {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None},
+                                StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
                             },
                            RowTypes.session:
                             {
-                                StyleType.default: {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.crashed: {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None}
+                                StyleType.default: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
+                                StyleType.crashed: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None}
                             },
                            RowTypes.line:
                             {
-                                StyleType.alt1: {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.alt2: {CellFormat.default: None, CellFormat.date: None, CellFormat.time: None}
+                                StyleType.alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
+                                StyleType.alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None}
                             }
                         }
         self.__build_style()
@@ -70,14 +71,15 @@ class StyleManager(object):
                         style.update(self.__alt_color_2)
 
                 for cellformat in stylelist.keys():
-                    if cellformat == CellFormat.date:
-                        style.update(self.__date_format)
+                    final_style = style.copy()
+                    if cellformat == CellFormat.file:
+                        final_style.update(self.__hyperlink_style)
+                    elif cellformat == CellFormat.date:
+                        final_style.update(self.__date_format)
                     elif cellformat == CellFormat.time:
-                        style.update(self.__time_format)
-                    else:
-                        style.pop('num_format', '')
+                        final_style.update(self.__time_format)
 
-                    stylelist[cellformat] = self.__workbook.add_format(style)
+                    stylelist[cellformat] = self.__workbook.add_format(final_style)
 
     def get_format(self, row_type, style_type, column_name):
         cellformat = get_cell_format(column_name)
@@ -125,7 +127,9 @@ class LogXlsxWriter(object):
             if column_name in row_as_csv.keys():
                 value = row_as_csv[column_name]
                 format = self.__style_manager.get_format(rowtype, styletype, column_name)
-                if rowtype == RowTypes.session and column_name == Headers.message:
+                if column_name == Headers.file:
+                    self.__worksheet.write_url(cell, r'external:' + value, format)
+                elif rowtype == RowTypes.session and column_name == Headers.message:
                     self.__worksheet.merge_range(cell, str(value) if type(value) is bytes else value, format)
                 else:
                     self.__worksheet.write(cell, str(value) if type(value) is bytes else value, format)
