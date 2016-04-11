@@ -13,8 +13,9 @@ import log_parser_engine
               help='Log entries after that date will be ignored. Format: yyyy-mm-dd')
 @click.option('--output', default=None,
               help='Indicates the output file name (with or without extention - by default it''s xlsx). If no this option is not specified then a file name is generated. If the path is relative, the file is saved in the same folder than this tool')
-def show_it(path=None, fromdate=None, todate=None, output=None):
-    mainwindow = LogParserGUI.LogParserMainWindows(path, fromdate, todate, output)
+@click.option('--autoopen/--no-autoopen', is_flag=True, default=True, help='Open the resulting excel file. Auto-open is true by default.')
+def show_it(path=None, fromdate=None, todate=None, output=None, autoopen=True):
+    mainwindow = LogParserGUI.LogParserMainWindows(path, fromdate, todate, output, autoopen)
     mainwindow.ShowMainWindow()
 
 
@@ -26,6 +27,7 @@ def show_it(path=None, fromdate=None, todate=None, output=None):
               help='Log entries after that date will be ignored. Format: yyyy-mm-dd')
 @click.option('--output', default=None,
               help='Indicates the output file name (with or without extention - by default it''s xlsx). If no this option is not specified then a file name is generated. If the path is relative, the file is saved in the same folder than this tool')
-def do_it(path=None, fromdate=None, todate=None, output=None):
+@click.option('--autoopen/--no-autoopen', is_flag=True, help='Open the resulting excel file. Auto-open is true by default.')
+def do_it(path=None, fromdate=None, todate=None, output=None, autoopen=True):
     flp = log_parser_engine.FolderLogParser()
-    flp.parse(path, None, fromdate, todate, output)
+    flp.parse(path, None, fromdate, todate, output, autoopen)

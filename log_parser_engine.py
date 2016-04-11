@@ -447,7 +447,7 @@ class FolderLogParser(object):
             logging.exception('')
             raise
 
-    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None):
+    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None, autoopen=True):
         try:
             self.__stats = []
             self.__filtered_in_levels = log_levels_filtered_in
@@ -466,7 +466,7 @@ class FolderLogParser(object):
                 logging.info( '\t' + log_file.fullname)
                 self.__provide_feedback(**{StatusBarValues.text: '\t' + log_file.fullname})
 
-            self.do_parse_files()
+            self.do_parse_files(autoopen)
         except Exception:
             logging.exception('')
             raise
@@ -564,7 +564,7 @@ class FolderLogParser(object):
     def files_processed(self):
         return self.__processed_file_count
 
-    def do_parse_files(self):
+    def do_parse_files(self, autoopen=True):
         self.__timer = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
@@ -601,6 +601,9 @@ class FolderLogParser(object):
                 logging.info(log_text)
 
             self.save_result_to_xlsx_file(self.__output)
+
+            if autoopen:
+                os.startfile(self.__output)
         except Exception:
             logging.exception('')
             raise

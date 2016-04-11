@@ -18,11 +18,12 @@ from xml_excel_helper import GetOutputXlsxFileName
 SPLITTER_MIN_SIZE = 30
 
 class LogParserMainWindows(object):
-    def __init__(self, path=None, fromdate=None, todate=None, output=None):
+    def __init__(self, path=None, fromdate=None, todate=None, output=None, autoopen=True):
         self.__app = QtWidgets.QApplication(sys.argv)
         self.__mainwindow = QtWidgets.QMainWindow()
         self.__ui = LogParserMainWindow.Ui_MainWindow()
         self.__ui.setupUi(self.__mainwindow)
+        self.__ui.chk_AutoOpen.setChecked(autoopen)
         self.__init_UI()
         self.__init_events()
         self.__mainwindow.setContentsMargins( 0, 0 ,0 ,0)
