@@ -308,7 +308,7 @@ class LogFileParser(object):
                 # 2 open session in a row without a close session implies a session that was terminated abnormaly
                 self.__close_session(crashedsession=self.__session_opened)
                 self.__open_session(log_line_dict)
-                self.__add_session_callback(self.parsed_file.parsed_file_info.fullname)
+                self.__add_session_callback(self.parsed_file.parsed_file_info.fullname, log_line_dict.date)
                 return True
             elif log_line_dict is None or log_line_dict.message.startswith('END SESSION'):
                 if not self.__session_opened:
@@ -495,8 +495,8 @@ class FolderLogParser(object):
         for key, level in self.__filtered_in_levels.items():
             self.__filtered_in_levels[key] = '[{0}]'.format(level.upper())
 
-    def __add_session_callback(self, logfilename):
-        self.__session_stats.add_session(logfilename)
+    def __add_session_callback(self, logfilename, date):
+        self.__session_stats.add_session(logfilename, date)
 
     def parse_one_file(self, file_info_to_parse):
         lt = other_helpers.ProcessTimer()
