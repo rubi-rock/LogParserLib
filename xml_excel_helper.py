@@ -96,7 +96,7 @@ class LogXlsxWriter(object):
 
         self.__workbook = xlsxwriter.Workbook(filename)
         self.__worksheet = self.__workbook.add_worksheet("Log Compilation")
-        self.__worksheet.tab_color = "1072BA"
+        self.__worksheet.tab_color = "FF3300"
         self.__style_manager = StyleManager(self.__workbook)
         self.__add_header()
 
@@ -150,15 +150,31 @@ class LogXlsxWriter(object):
         self.append_row(line_as_csv, RowTypes.line, StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
         self.__row_count += 1
 
-    def __add_stats(self):
-        stats_worksheet = self.__workbook.add_worksheet('Statistics')
+    def __add_processing_stats(self):
+        stats_worksheet = self.__workbook.add_worksheet('Logs Processing Statistics')
         stats_worksheet.tab_color = "96FF33"
         stats_worksheet.set_column('A:A', 200)
         rowpos= 0
-        for stat in self.__log_folder_parser.stats:
+        for stat in self.__log_folder_parser.processing_stats:
             stats_worksheet.write(rowpos, 0, str(stat))
             rowpos += 1
 
+    def __add_session_stats(self):
+        stats_worksheet = self.__workbook.add_worksheet('Session Statistics')
+        stats_worksheet.tab_color = "1072BA"
+        stats_worksheet.set_column('A:C', 30)
+        stats_worksheet.write('A1', 'Folder')
+        stats_worksheet.write('B1', 'User')
+        stats_worksheet.write('C1', 'Application')
+        stats_worksheet.write('D1', 'Session Count')
+        rowpos = 1
+        for stat in self.__log_folder_parser.session_stats.items.values():
+            stats_worksheet.write(rowpos, 0, str(stat.folder))
+            stats_worksheet.write(rowpos, 1, str(stat.user))
+            stats_worksheet.write(rowpos, 2, str(stat.application))
+            stats_worksheet.write(rowpos, 3, stat.session_count)
+            rowpos += 1
+        stats_worksheet.autofilter(0, 0, rowpos, 3)
 
     def close(self):
         self.__worksheet.set_column('A:A', 40)
@@ -170,7 +186,8 @@ class LogXlsxWriter(object):
 
         self.__worksheet.autofilter(0, 0, self.__log_folder_parser.files_and_sessions_and_lines_count , len(Headers) - 1)
 
-        self.__add_stats()
+        self.__add_session_stats()
+        self.__add_processing_stats()
 
         self.__workbook.close()
 

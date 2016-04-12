@@ -41,7 +41,7 @@ StatusBarValues = ListEnum(
 #
 ParamNames = ListEnum(
     ['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date',
-     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context', 'cancel_callback'])
+     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context', 'cancel_callback', 'add_session_callback'])
 
 # Be careful: this one does not use regular expression nor upper or any facilitator for performance reasons.
 # Therefore the text we are looking for must be exactly this one and with this case.

@@ -1,8 +1,10 @@
 import copy
 import logging
+import os
 from datetime import datetime, date
 
 from constants import Headers, LOG_LEVEL_LIST, RowTypes
+from other_helpers import ListEnum
 from regex_helper import StringDateHelper
 from constants import DEFAULT_CONTEXT_LENGTH, MIN_DATE
 
@@ -359,8 +361,49 @@ class ParsedLogFile(object):
         row[Headers.time] = self.parsed_file_info.date.time()
         return row
 
+#
+#
+#
+class  UserSession(object):
+    def __init__(self, log_filename):
+        tmp = ( os.path.sep * 3 + log_filename)
+        tmp = tmp.rsplit(os.path.sep, 1)
+        self.__application = tmp[1]
+        tmp = tmp[0].rsplit(os.path.sep, 1)
+        self.__user = tmp[1]
+        self.__folder = tmp[0].strip(os.path.sep)
+        self.__session_count = 1
 
-    # Save the log extraction to a CSV file
-    def save_to_csv_file(self, csv_file_name=None):
-        return csv_helper.WriteLogFolderParserToCSV(self, csv_file_name)
+    def add_session(self):
+        self.__session_count += 1
 
+    @property
+    def folder(self):
+        return self.__folder
+    @property
+    def user(self):
+        return self.__user
+    @property
+    def application(self):
+        return self.__application
+    @property
+    def session_count(self):
+        return self.__session_count
+
+
+#
+#
+#
+class UserSessionStats(object):
+    def __init__(self):
+        self.__items = {}
+
+    def add_session(self, log_file_name):
+        if log_file_name in self.__items.keys():
+            self.__items[log_file_name].add_session()
+        else:
+            self.__items[log_file_name] = UserSession(log_file_name)
+
+    @property
+    def items(self):
+        return self.__items

@@ -5,6 +5,8 @@ from datetime import datetime
 import inspect
 import sys
 
+import subprocess
+
 
 class FileInfo(dict):
     # def initialize(self, root, filename):
@@ -81,3 +83,9 @@ def generate_file_name(prefix='', extension = '.tmp', path = os.path.curdir):
     filename = prefix + filename if prefix is not None and prefix != '' else filename
     filename = filename + extension if extension is not None and extension != '' else filename
     return os.path.join(path, filename)
+
+def start_file(filename):
+    if sys.platform == "win32":
+        os.startfile(filename)
+    elif sys.platform == "darwin":
+        subprocess.call(["open", filename])

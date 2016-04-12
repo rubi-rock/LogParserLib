@@ -8,7 +8,7 @@ import other_helpers
 import xml_excel_helper
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
     DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
-from log_parser_objects import log_context, Log_Line, ParsedLogFile
+from log_parser_objects import log_context, Log_Line, ParsedLogFile, UserSessionStats
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
 
@@ -149,6 +149,7 @@ class LogFileParser(object):
         try:
             log_context.clear()
             self.__cancel_callback = params[ParamNames.cancel_callback]
+            self.__add_session_callback = params[ParamNames.add_session_callback]
             self.__lines_processed = 0
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
@@ -307,6 +308,7 @@ class LogFileParser(object):
                 # 2 open session in a row without a close session implies a session that was terminated abnormaly
                 self.__close_session(crashedsession=self.__session_opened)
                 self.__open_session(log_line_dict)
+                self.__add_session_callback(self.parsed_file.parsed_file_info.fullname)
                 return True
             elif log_line_dict is None or log_line_dict.message.startswith('END SESSION'):
                 if not self.__session_opened:
@@ -364,10 +366,6 @@ class FolderLogParser(object):
             self.__timer = None
             self.__progress_callback = None
             self.__cancel_callback = None
-            if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
-                log_context.limit = kwargs[ParamNames.provide_context]
-            else:
-                log_context.limit = DEFAULT_CONTEXT_LENGTH
             self.__csv_file_name = os_path_helper.generate_file_name('log-files-parsed - ')
             self.__processed_file_count = 0
             self.__root_parth = ""
@@ -375,26 +373,34 @@ class FolderLogParser(object):
             self.__max_date = MAX_DATE
             self.__log_file_info_list = []
             self.__parsed_files = []
-            self.__performance_trigger_in_ms = kwargs[
-                ParamNames.performance_trigger_in_ms] if ParamNames.performance_trigger_in_ms in kwargs.keys() \
-                else DEFAULT_PERFORMANCE_TRIGGER_IN_MS
-            self.__re_exclusions = PreparedExpressionList(
-                kwargs[ParamNames.exclusions]) if ParamNames.exclusions in kwargs.keys() \
-                else PreparedExpressionList(DEFAULT_EXCLUSIONS)
-            self.__re_categories = PreparedExpressionList(
-                kwargs[ParamNames.categories]) if ParamNames.categories in kwargs.keys() \
-                else PreparedExpressionList(DEFAULT_CATEGORIES)
-            self.__session_info = kwargs[ParamNames.session_info] if ParamNames.session_info in kwargs.keys() \
-                else DefaultSessionInfo
+            self.__session_stats = UserSessionStats()
             self.__files_processed = 0
             self.__lines_parsed = 0
             self.__lines_to_analyze_count = 0
             self.__last_logfile_lines_parsed = 0
             self.__filtered_in_levels = DEFAULT_LOG_LEVELS
-            self.__stats = []
+            self.__processing_stats = []
+            self.__init_from_params(**kwargs)
         except Exception:
             logging.exception('')
             raise
+
+    def __init_from_params(self, **kwargs):
+        if ParamNames.provide_context in kwargs.keys() and kwargs[ParamNames.provide_context] is not None:
+            log_context.limit = kwargs[ParamNames.provide_context]
+        else:
+            log_context.limit = DEFAULT_CONTEXT_LENGTH
+        self.__performance_trigger_in_ms = kwargs[
+            ParamNames.performance_trigger_in_ms] if ParamNames.performance_trigger_in_ms in kwargs.keys() \
+            else DEFAULT_PERFORMANCE_TRIGGER_IN_MS
+        self.__re_exclusions = PreparedExpressionList(
+            kwargs[ParamNames.exclusions]) if ParamNames.exclusions in kwargs.keys() \
+            else PreparedExpressionList(DEFAULT_EXCLUSIONS)
+        self.__re_categories = PreparedExpressionList(
+            kwargs[ParamNames.categories]) if ParamNames.categories in kwargs.keys() \
+            else PreparedExpressionList(DEFAULT_CATEGORIES)
+        self.__session_info = kwargs[ParamNames.session_info] if ParamNames.session_info in kwargs.keys() \
+            else DefaultSessionInfo
 
     # list of parsed log file objects
     @property
@@ -418,8 +424,12 @@ class FolderLogParser(object):
         return self.__max_date
 
     @property
-    def stats(self):
-        return self.__stats
+    def processing_stats(self):
+        return self.__processing_stats
+
+    @property
+    def session_stats(self):
+        return self.__session_stats
 
     def filter_on_date(self, log_file_info_to_filter):
         try:
@@ -449,7 +459,7 @@ class FolderLogParser(object):
 
     def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None, autoopen=True):
         try:
-            self.__stats = []
+            self.__processing_stats = []
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
             self.__root_parth = root_path
@@ -473,7 +483,7 @@ class FolderLogParser(object):
 
     def __provide_feedback(self, **kwargs):
         if StatusBarValues.text in kwargs.keys():
-            self.__stats.append(kwargs[StatusBarValues.text])
+            self.__processing_stats.append(kwargs[StatusBarValues.text])
 
         if self.__progress_callback is not None:
             if self.__timer is not None:
@@ -485,6 +495,9 @@ class FolderLogParser(object):
         for key, level in self.__filtered_in_levels.items():
             self.__filtered_in_levels[key] = '[{0}]'.format(level.upper())
 
+    def __add_session_callback(self, logfilename):
+        self.__session_stats.add_session(logfilename)
+
     def parse_one_file(self, file_info_to_parse):
         lt = other_helpers.ProcessTimer()
         try:
@@ -494,7 +507,8 @@ class FolderLogParser(object):
                       ParamNames.performance_trigger_in_ms: self.__performance_trigger_in_ms,
                       ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date,
-                      ParamNames.cancel_callback: self.__cancel_callback}
+                      ParamNames.cancel_callback: self.__cancel_callback,
+                      ParamNames.add_session_callback: self.__add_session_callback}
             log_parser = LogFileParser(**params)
             self.__processed_file_count += 1
             parsed_file = log_parser.parsed_file
@@ -508,19 +522,14 @@ class FolderLogParser(object):
             self.__lines_parsed += log_parser.lines_processed
 
             log_text = "\tDone: {0} - {1}/{2} lines parsed - {3}/{4} files. CPU Time: {5} sec., {6} new lines to analyze from this file.".format(
-                parsed_file.parsed_file_info.fullname,
-                log_parser.lines_processed,
-                self.lines_parsed,
-                self.files_processed,
-                len(self.log_file_info_list),
-                lt.time_to_str,
+                parsed_file.parsed_file_info.fullname, log_parser.lines_processed,
+                self.lines_parsed, self.files_processed,
+                len(self.log_file_info_list), lt.time_to_str,
                 parsed_file.lines_count)
-            self.__provide_feedback(**{StatusBarValues.text: log_text,
-                                       StatusBarValues.total_lines: self.lines_parsed,
+            self.__provide_feedback(**{StatusBarValues.text: log_text, StatusBarValues.total_lines: self.lines_parsed,
                                        StatusBarValues.lines_processed: log_parser.lines_processed,
                                        StatusBarValues.total_files: len(self.log_file_info_list),
-                                       StatusBarValues.files_processed: self.files_processed
-                                       })
+                                       StatusBarValues.files_processed: self.files_processed })
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_SESSION:
@@ -603,7 +612,7 @@ class FolderLogParser(object):
             self.save_result_to_xlsx_file(self.__output)
 
             if autoopen:
-                os.startfile(self.__output)
+                os_path_helper.start_file(self.__output)
         except Exception:
             logging.exception('')
             raise
