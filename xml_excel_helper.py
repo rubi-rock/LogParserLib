@@ -162,19 +162,25 @@ class LogXlsxWriter(object):
     def __add_session_stats(self):
         stats_worksheet = self.__workbook.add_worksheet('Session Statistics')
         stats_worksheet.tab_color = "1072BA"
-        stats_worksheet.set_column('A:C', 30)
+        stats_worksheet.set_column('A:A', 60)
+        stats_worksheet.set_column('B:C', 30)
+        stats_worksheet.set_column('D:D', 15)
+        stats_worksheet.set_column('E:E', 10)
         stats_worksheet.write('A1', 'Folder')
         stats_worksheet.write('B1', 'User')
         stats_worksheet.write('C1', 'Application')
-        stats_worksheet.write('D1', 'Session Count')
+        stats_worksheet.write('D1', 'Date')
+        stats_worksheet.write('E1', 'Session Count')
+        format = self.__workbook.add_format({'num_format': 'yyyy-mm-dd'})
         rowpos = 1
         for stat in self.__log_folder_parser.session_stats.items.values():
-            stats_worksheet.write(rowpos, 0, str(stat.folder))
-            stats_worksheet.write(rowpos, 1, str(stat.user))
-            stats_worksheet.write(rowpos, 2, str(stat.application))
-            stats_worksheet.write(rowpos, 3, stat.session_count)
+            stats_worksheet.write(rowpos, 0, stat.folder)
+            stats_worksheet.write(rowpos, 1, stat.user)
+            stats_worksheet.write(rowpos, 2, stat.application)
+            stats_worksheet.write(rowpos, 3, stat.date, format)
+            stats_worksheet.write(rowpos, 4, stat.session_count)
             rowpos += 1
-        stats_worksheet.autofilter(0, 0, rowpos, 3)
+        stats_worksheet.autofilter(0, 0, rowpos, 4)
 
     def close(self):
         self.__worksheet.set_column('A:A', 40)

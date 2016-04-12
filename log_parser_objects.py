@@ -361,31 +361,54 @@ class ParsedLogFile(object):
         row[Headers.time] = self.parsed_file_info.date.time()
         return row
 
+
+#
+#
+#
+UserSessionTokens = ListEnum(['folder', 'application', 'user', 'date', 'key'])
+
+#
+#
+#
+def build_user_session_struct(log_filename, date):
+    result = {}
+    tmp = (os.path.sep * 3 + log_filename)
+    tmp = tmp.rsplit(os.path.sep, 1)
+    result[UserSessionTokens.application] = ''.join(c for c in os.path.splitext(os.path.basename(tmp[1]))[0] if not c.isdigit())
+    tmp = tmp[0].rsplit(os.path.sep, 1)
+    result[UserSessionTokens.user] = tmp[1]
+    result[UserSessionTokens.folder] = tmp[0].strip(os.path.sep)
+    result[UserSessionTokens.date] = date
+    result[UserSessionTokens.key] = '|'.join(str(value) for value in result.values())
+    return result
+
+
 #
 #
 #
 class  UserSession(object):
-    def __init__(self, log_filename):
-        tmp = ( os.path.sep * 3 + log_filename)
-        tmp = tmp.rsplit(os.path.sep, 1)
-        self.__application = tmp[1]
-        tmp = tmp[0].rsplit(os.path.sep, 1)
-        self.__user = tmp[1]
-        self.__folder = tmp[0].strip(os.path.sep)
+    def __init__(self, **values):
+        self.__values = values
         self.__session_count = 1
 
     def add_session(self):
         self.__session_count += 1
 
     @property
+    def key(self):
+        return self.__values[UserSessionTokens.key]
+    @property
     def folder(self):
-        return self.__folder
+        return self.__values[UserSessionTokens.folder]
     @property
     def user(self):
-        return self.__user
+        return self.__values[UserSessionTokens.user]
     @property
     def application(self):
-        return self.__application
+        return self.__values[UserSessionTokens.application]
+    @property
+    def date(self):
+        return self.__values[UserSessionTokens.date]
     @property
     def session_count(self):
         return self.__session_count
@@ -398,11 +421,13 @@ class UserSessionStats(object):
     def __init__(self):
         self.__items = {}
 
-    def add_session(self, log_file_name):
-        if log_file_name in self.__items.keys():
-            self.__items[log_file_name].add_session()
+    def add_session(self, log_file_name, date):
+        user_session = build_user_session_struct(log_file_name, date)
+        key = user_session[UserSessionTokens.key]
+        if key in self.__items.keys():
+            self.__items[key].add_session()
         else:
-            self.__items[log_file_name] = UserSession(log_file_name)
+            self.__items[key] = UserSession(**user_session)
 
     @property
     def items(self):
