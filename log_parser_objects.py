@@ -1,7 +1,7 @@
 import copy
 import logging
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from constants import Headers, LOG_LEVEL_LIST, RowTypes
 from other_helpers import ListEnum
@@ -11,6 +11,48 @@ from constants import DEFAULT_CONTEXT_LENGTH, MIN_DATE
 
 # Date used when the date and time from the log line cannot be parsed
 UNPARSABLE_DATETIME = datetime(year=1900, month=1, day=1, hour=0)
+
+
+class LogInfos(object):
+    def __init__(self, file_to_parse_info):
+        file_name_parts = extract_logfilename_parts(file_to_parse_info.fullname)
+        self.__file_info = file_to_parse_info
+        self.__user = file_name_parts[UserSessionTokens.user]
+        self.__application = file_name_parts[UserSessionTokens.application]
+        self.__machine_name = file_name_parts[UserSessionTokens.folder]
+        self.__root_folder = file_name_parts[UserSessionTokens.folder]
+
+    @property
+    def file_info(self):
+        return self.__file_info
+
+    @property
+    def machine_name(self):
+        return self.__machine_name
+
+    @machine_name.setter
+    def machine_name(self, value):
+        self.__machine_name = value
+
+    @property
+    def user(self):
+        return self.__user
+
+    @property
+    def application(self):
+        return self.__application
+
+    @property
+    def root_folder(self):
+        return self.__root_folder
+
+    @root_folder.setter
+    def root_folder(self, value):
+        self.__root_folder = value
+
+    def get_properties(self):
+        return self.file_info.path, self.root_folder, self.user, self.application, self.machine_name
+
 
 
 #
@@ -59,7 +101,7 @@ class LogSession(object):
     __id_seq = 0
 
     # constructor
-    def __init__(self, log_dict=None):
+    def __init__(self, log_infos, log_dict=None):
         try:
             if log_dict is None:
                 self.__module = 'Unknown'
@@ -70,6 +112,7 @@ class LogSession(object):
                 self.__date = log_dict.date
                 self.__time = log_dict.time
             LogSession.__id_seq += 1
+            self.__log_infos = log_infos
             self.__id = LogSession.__id_seq
             self.__lines = []
             self.__has_crashed = False
@@ -80,6 +123,10 @@ class LogSession(object):
         except Exception:
             logging.exception('')
             raise
+
+    @property
+    def log_infos(self):
+        return self.__log_infos
 
     # serialize as string to help for logging and debugging
     def __str__(self):
@@ -163,6 +210,18 @@ class LogSession(object):
     def message(self):
         return '[{0}]'.format(']['.join("{0}={1}".format(key, value) for key, value in self.__info.items()))
 
+    @property
+    def date(self):
+        return self.__date
+
+    @property
+    def time(self):
+        return self.__time
+
+    @property
+    def session_id(self):
+        return self.__id
+
     # Set the termination reason when known
     def set_termination_reason(self, reason):
         self.__termination_reason = reason
@@ -173,6 +232,10 @@ class LogSession(object):
     def as_csv_row(self):
         row = dict()
         row[Headers.type] = RowTypes.session
+        row[Headers.user] = self.__log_infos.user
+        row[Headers.application] = self.__log_infos.application
+        row[Headers.machine] = self.__log_infos.machine
+        row[Headers.file] = self.__log_infos.file_info.fullname
         row[Headers.date] = self.__date
         row[Headers.time] = self.__time
         row[Headers.session] = self.__id
@@ -273,6 +336,7 @@ class ParsedLogFile(object):
             self.__file_info = file_to_parse_info
             self.__sessions = []
             self.__current_session = None
+            self.__log_infos = LogInfos(file_to_parse_info)
 
         except Exception:
             logging.exception('')
@@ -290,6 +354,38 @@ class ParsedLogFile(object):
     @property
     def parsed_file_info(self):
         return self.__file_info
+
+    @property
+    def machine_name(self):
+        return self.__log_infos.machine_name
+
+    @machine_name.setter
+    def machine_name(self, value):
+        self.__log_infos.machine_name = value
+        for session in self.__sessions:
+            session.log_infos.machine = value
+
+    @property
+    def user(self):
+        return self.__log_infos.user
+
+    @property
+    def application(self):
+        return self.__log_infos.application
+
+    @property
+    def root_folder(self):
+        return self.__log_infos.root_folder
+
+    @root_folder.setter
+    def root_folder(self, value):
+        self.__log_infos.root_folder = value
+        for session in self.__sessions:
+            session.log_infos.root_folder = value
+
+    @property
+    def log_infos(self):
+        return self.__log_infos
 
     # List of sessions for this log file
     @property
@@ -318,9 +414,12 @@ class ParsedLogFile(object):
 
     # Open a new session and set the current session - used to add new logs
     def open_session(self, log_dict=None):
-        self.__current_session = LogSession(log_dict)
+        self.__current_session = LogSession(self.__log_infos, log_dict)
         self.__sessions.append(self.__current_session)
 
+    @property
+    def current_session(self):
+        return self.__current_session
 
     # close the current session - if empty then delete it because we are not interested in sessions not meanningful
     def close_session(self, crashedsession=False):
@@ -356,6 +455,9 @@ class ParsedLogFile(object):
     def as_csv_row(self):
         row = dict()
         row[Headers.type] = RowTypes.file
+        row[Headers.user] = self.__log_infos.user
+        row[Headers.application] = self.__log_infos.application
+        row[Headers.machine] = self.__log_infos.machine
         row[Headers.file] = self.parsed_file_info.fullname
         row[Headers.date] = self.parsed_file_info.date.date()
         row[Headers.time] = self.parsed_file_info.date.time()
@@ -365,21 +467,36 @@ class ParsedLogFile(object):
 #
 #
 #
-UserSessionTokens = ListEnum(['folder', 'application', 'user', 'date', 'key'])
+UserSessionTokens = ListEnum(['folder', 'application', 'user', 'machine', 'session_id',  'date', 'start_time', 'end_time', 'key'])
 
 #
-#
-#
-def build_user_session_struct(log_filename, date):
+def extract_logfilename_parts(log_file_name):
     result = {}
-    tmp = (os.path.sep * 3 + log_filename)
+    tmp = (os.path.sep * 3 + log_file_name)
     tmp = tmp.rsplit(os.path.sep, 1)
     result[UserSessionTokens.application] = ''.join(c for c in os.path.splitext(os.path.basename(tmp[1]))[0] if not c.isdigit())
     tmp = tmp[0].rsplit(os.path.sep, 1)
     result[UserSessionTokens.user] = tmp[1]
     result[UserSessionTokens.folder] = tmp[0].strip(os.path.sep)
-    result[UserSessionTokens.date] = date
+    result[UserSessionTokens.machine] = result[UserSessionTokens.folder]
+    return result
+
+#
+def build_user_session_struct(session):
+    result = {}
+
+    result[UserSessionTokens.application] = session.log_infos.application.upper()
+    result[UserSessionTokens.user] = session.log_infos.user
+    result[UserSessionTokens.folder] = session.log_infos.root_folder
+    result[UserSessionTokens.machine] = session.log_infos.machine_name
+
+    result[UserSessionTokens.session_id] = session.session_id
+
     result[UserSessionTokens.key] = '|'.join(str(value) for value in result.values())
+
+    result[UserSessionTokens.date] = session.date
+    result[UserSessionTokens.start_time] = session.time
+    result[UserSessionTokens.end_time] = None
     return result
 
 
@@ -389,10 +506,9 @@ def build_user_session_struct(log_filename, date):
 class  UserSession(object):
     def __init__(self, **values):
         self.__values = values
-        self.__session_count = 1
 
-    def add_session(self):
-        self.__session_count += 1
+    def end_session(self, end_time):
+        self.__values[UserSessionTokens.end_time] = end_time
 
     @property
     def key(self):
@@ -401,17 +517,26 @@ class  UserSession(object):
     def folder(self):
         return self.__values[UserSessionTokens.folder]
     @property
+    def machine(self):
+        return self.__values[UserSessionTokens.machine]
+    @property
     def user(self):
         return self.__values[UserSessionTokens.user]
     @property
     def application(self):
         return self.__values[UserSessionTokens.application]
     @property
+    def session_id(self):
+        return self.__values[UserSessionTokens.session_id]
+    @property
     def date(self):
         return self.__values[UserSessionTokens.date]
     @property
-    def session_count(self):
-        return self.__session_count
+    def start_time(self):
+        return self.__values[UserSessionTokens.start_time]
+    @property
+    def end_time(self):
+        return self.__values[UserSessionTokens.end_time]
 
 
 #
@@ -421,14 +546,92 @@ class UserSessionStats(object):
     def __init__(self):
         self.__items = {}
 
-    def add_session(self, log_file_name, date):
-        user_session = build_user_session_struct(log_file_name, date)
+    def start_session(self, session):
+        user_session = build_user_session_struct(session)
+        if user_session[UserSessionTokens.application] == 'PURKINJE':
+            return
+        key = user_session[UserSessionTokens.key]
+        if not key in self.__items.keys():
+            self.__items[key] = UserSession(**user_session)
+
+    def end_session(self, session):
+        if session is None:
+            return
+        user_session = build_user_session_struct(session)
+        if user_session[UserSessionTokens.application] == 'PURKINJE':
+            return
         key = user_session[UserSessionTokens.key]
         if key in self.__items.keys():
-            self.__items[key].add_session()
-        else:
-            self.__items[key] = UserSession(**user_session)
+            if session.lines_count == 0:
+                last_log_time = session.date + timedelta(hours=4, minutes=0, seconds=0)
+            else:
+                last_log_time = session.lines[session.lines_count - 1].time
+            self.__items[key].end_session(last_log_time)
 
     @property
     def items(self):
         return self.__items
+
+
+class MachineUserStats(object):
+    def __init__(self):
+        self.__items = {}
+        self.__items['users'] = {}
+        self.__items['applications'] = {}
+        self.__items['machines'] = {}
+
+
+    def process(self, log_folder_parser):
+        # List machine names (or folders, let's the reader to cleanup names')
+        for parsed_file in log_folder_parser.parsed_files:
+            folder, root_path, user, application, machine = parsed_file.log_infos.get_properties()
+            if application.lower() == 'PURKINJE':
+                continue
+            if user not in self.__items['users']:
+                self.__items['users'][user] = {}
+                self.__items['users'][user]['applications'] = {}
+                self.__items['users'][user]['machines'] = {}
+            if machine not in self.__items['machines']:
+                self.__items['machines'][machine] = {}
+                self.__items['machines'][machine]['users'] = {}
+                self.__items['machines'][machine]['applications'] = {}
+            if application not in self.__items['applications']:
+                self.__items['applications'][application] = {}
+                self.__items['applications'][application]['users'] = {}
+                self.__items['applications'][application]['machines'] = {}
+
+        for parsed_file in log_folder_parser.parsed_files:
+            folder, root_path, user, application, machine = parsed_file.log_infos.get_properties()
+            if application.lower() == 'PURKINJE':
+                continue
+            for session in parsed_file.sessions:
+                # Creates stats for the user
+                self.__items['users'][user]['applications'][application] = session.lines_count + (self.__items['users'][user]['applications'][application] if application in self.__items['users'][user]['applications'] else 0)
+                self.__items['users'][user]['machines'][machine] = session.lines_count + (self.__items['users'][user]['machines'][machine] if machine in self.__items['users'][user]['machines'] else 0)
+                # Creates stats for the application
+                self.__items['applications'][application]['users'][user] = session.lines_count + (self.__items['applications'][application]['users'][user] if user in self.__items['applications'][application]['users'] else 0)
+                self.__items['applications'][application]['machines'][machine] = session.lines_count + (self.__items['applications'][application]['machines'][machine] if machine in self.__items['applications'][application]['machines'] else 0)
+                # Creates stats for the machine
+                self.__items['machines'][machine]['users'][user] = session.lines_count + (self.__items['machines'][machine]['users'][user] if user in self.__items['machines'][machine]['users'] else 0)
+                self.__items['machines'][machine]['applications'][application] = session.lines_count + (self.__items['machines'][machine]['applications'][application] if application in self.__items['machines'][machine]['applications'] else 0)
+
+    @property
+    def items(self):
+        return self.__items
+
+    @property
+    def users(self):
+        return self.__items['users']
+
+    @property
+    def folders(self):
+        return self.__items['folders']
+
+    @property
+    def applications(self):
+        return self.__items['applications']
+
+    @property
+    def machines(self):
+        return self.__items['machines']
+

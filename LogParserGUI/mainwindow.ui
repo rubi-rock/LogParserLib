@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
+    <width>1256</width>
     <height>793</height>
    </rect>
   </property>
@@ -57,6 +57,12 @@
           </property>
           <item>
            <widget class="QLabel" name="label">
+            <property name="minimumSize">
+             <size>
+              <width>55</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
             </property>
@@ -78,14 +84,33 @@
          </layout>
         </item>
         <item>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <property name="horizontalSpacing">
-           <number>6</number>
-          </property>
-          <property name="verticalSpacing">
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <property name="spacing">
            <number>0</number>
           </property>
-          <item row="0" column="2">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="minimumSize">
+             <size>
+              <width>55</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>55</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="text">
+             <string> From:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QDateEdit" name="date_From">
             <property name="displayFormat">
              <string>yyyy/MM/dd</string>
@@ -95,7 +120,7 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
+          <item>
            <widget class="QLabel" name="label_3">
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
@@ -105,58 +130,7 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="5">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string> Performance Trigger:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="text">
-             <string> From:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="7">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>sec </string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="10">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>previous lines</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="9">
-           <widget class="QSpinBox" name="spin_contextLOL">
-            <property name="maximum">
-             <number>100</number>
-            </property>
-            <property name="singleStep">
-             <number>5</number>
-            </property>
-            <property name="value">
-             <number>10</number>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="8">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string> Context:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
+          <item>
            <widget class="QDateEdit" name="date_To">
             <property name="displayFormat">
              <string>yyyy/MM/dd</string>
@@ -173,7 +147,39 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="6">
+          <item>
+           <widget class="QFrame" name="frame_3">
+            <property name="minimumSize">
+             <size>
+              <width>16</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWidth">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Performance Trigger:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QDoubleSpinBox" name="spin_perfTrigger">
             <property name="decimals">
              <number>1</number>
@@ -192,7 +198,126 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="11">
+          <item>
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>sec </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_4">
+            <property name="minimumSize">
+             <size>
+              <width>16</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWidth">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Context:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spin_contextLOL">
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="singleStep">
+             <number>5</number>
+            </property>
+            <property name="value">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>previous lines</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_5">
+            <property name="minimumSize">
+             <size>
+              <width>16</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWidth">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_splitFilePath">
+            <property name="text">
+             <string>Split File Path</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_6">
+            <property name="minimumSize">
+             <size>
+              <width>16</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWidth">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -214,6 +339,12 @@
           </property>
           <item>
            <widget class="QLabel" name="label_8">
+            <property name="minimumSize">
+             <size>
+              <width>55</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="text">
              <string>Output: </string>
             </property>
@@ -236,21 +367,24 @@
            <widget class="QFrame" name="frame_2">
             <property name="minimumSize">
              <size>
-              <width>8</width>
+              <width>16</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>8</width>
+              <width>16</width>
               <height>16777215</height>
              </size>
             </property>
             <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
+             <enum>QFrame::NoFrame</enum>
             </property>
             <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWidth">
+             <number>0</number>
             </property>
            </widget>
           </item>
@@ -738,8 +872,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1024</width>
-     <height>21</height>
+     <width>1256</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="defaultUp">
@@ -906,6 +1040,20 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>tabWidget_General</tabstop>
+  <tabstop>edt_Path</tabstop>
+  <tabstop>btn_SelectDir</tabstop>
+  <tabstop>date_To</tabstop>
+  <tabstop>spin_perfTrigger</tabstop>
+  <tabstop>spin_contextLOL</tabstop>
+  <tabstop>edt_output</tabstop>
+  <tabstop>chk_AutoOpen</tabstop>
+  <tabstop>edt_console</tabstop>
+  <tabstop>edt_Exclusions</tabstop>
+  <tabstop>edt_Categories</tabstop>
+  <tabstop>listWidget_LogLevels</tabstop>
+ </tabstops>
  <resources>
   <include location="icons.qrc"/>
  </resources>

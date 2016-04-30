@@ -18,12 +18,13 @@ from xml_excel_helper import GetOutputXlsxFileName
 SPLITTER_MIN_SIZE = 30
 
 class LogParserMainWindows(object):
-    def __init__(self, path=None, fromdate=None, todate=None, output=None, autoopen=True):
+    def __init__(self, path=None, fromdate=None, todate=None, output=None, splitfilename=True, autoopen=True):
         self.__app = QtWidgets.QApplication(sys.argv)
         self.__mainwindow = QtWidgets.QMainWindow()
         self.__ui = LogParserMainWindow.Ui_MainWindow()
         self.__ui.setupUi(self.__mainwindow)
         self.__ui.chk_AutoOpen.setChecked(autoopen)
+        self.__ui.chk_splitFilePath.setChecked(splitfilename)
         self.__init_UI()
         self.__init_events()
         self.__mainwindow.setContentsMargins( 0, 0 ,0 ,0)
@@ -194,6 +195,7 @@ class LogParserMainWindows(object):
         self.__ui.actionSelect_Folder.setEnabled(not isparsing)
         self.__ui.actionLoad_config_from_file.setEnabled(not isparsing)
         self.__ui.actionSave_config_to_file.setEnabled(not isparsing)
+        self.__ui.chk_splitFilePath.setEnabled(not isparsing)
 
     #
     # Parse the log file action event handler
@@ -207,7 +209,7 @@ class LogParserMainWindows(object):
             flp = log_parser_engine.FolderLogParser(**params)
             flp.set_progress_callback(self.__progress_callback)
             flp.set_cancel_callback(self.__cancel_callback)
-            flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime(), self.__ui.edt_output.text())
+            flp.parse(self.__ui.edt_Path.text(), DEFAULT_LOG_LEVELS, self.__ui.date_From.dateTime().toPyDateTime(), self.__ui.date_To.dateTime().toPyDateTime(), self.__ui.edt_output.text(), self.__ui.chk_splitFilePath.isChecked(), self.__ui.chk_AutoOpen.isChecked())
         finally:
             self.__update_action_states(False)
 
