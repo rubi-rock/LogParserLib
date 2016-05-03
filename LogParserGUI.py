@@ -196,6 +196,12 @@ class LogParserMainWindows(object):
         self.__ui.actionLoad_config_from_file.setEnabled(not isparsing)
         self.__ui.actionSave_config_to_file.setEnabled(not isparsing)
         self.__ui.chk_splitFilePath.setEnabled(not isparsing)
+        self.__ui.spin_contextLOL.setEnabled(not isparsing)
+        self.__ui.spin_perfTrigger.setEnabled(not isparsing)
+        self.__ui.date_From.setEnabled(not isparsing)
+        self.__ui.date_To.setEnabled(not isparsing)
+        self.__ui.edt_output.setEnabled(not isparsing)
+        self.__ui.edt_Path.setEnabled(not isparsing)
 
     #
     # Parse the log file action event handler

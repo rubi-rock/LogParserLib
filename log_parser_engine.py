@@ -602,6 +602,8 @@ class FolderLogParser(object):
         peer_list = []
         for parsed_file in self.__parsed_files:
             peer_list.append([parsed_file, parsed_file.root_folder])
+        if len(peer_list) == 0:
+            return
         objs, folders = zip(*peer_list)
         s = other_helpers.get_longest_common_subseq(folders)
         if s is None:
