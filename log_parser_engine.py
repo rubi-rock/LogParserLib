@@ -599,28 +599,33 @@ class FolderLogParser(object):
     # extract machine name when possible
     #
     def __process_names(self):
-        peer_list = []
-        for parsed_file in self.__parsed_files:
-            peer_list.append([parsed_file, parsed_file.root_folder])
-        if len(peer_list) == 0:
-            return
-        objs, folders = zip(*peer_list)
-        s = other_helpers.get_longest_common_subseq(folders)
-        if s is None:
-            return
-        parts = s.rsplit(os.path.sep, 1)
-        if len(parts) > 1:
-            root_path = parts[0]
+        try:
+            peer_list = []
+            for parsed_file in self.__parsed_files:
+                peer_list.append([parsed_file, parsed_file.root_folder])
+            if len(peer_list) == 0:
+                return
+            objs, folders = zip(*peer_list)
+            s = other_helpers.get_longest_common_subseq(folders)
+            if s is None:
+                return
+            parts = s.rsplit(os.path.sep, 1)
+            if len(parts) > 1:
+                root_path = parts[0]
+                for peer in peer_list:
+                    peer[1] = peer[1].replace(root_path, '')
+            objs, folders = zip(*peer_list)
+            s = other_helpers.get_longest_common_subseq(folders)
+            if s is None:
+                return
             for peer in peer_list:
-                peer[1] = peer[1].replace(root_path, '')
-        objs, folders = zip(*peer_list)
-        s = other_helpers.get_longest_common_subseq(folders)
-        if s is None:
-            return
-        for peer in peer_list:
-            peer[0].machine_name = peer[1].replace(s, '').replace(os.path.sep, '')
-            peer[0].root_folder = peer[0].log_infos.root_folder.split(peer[0].machine_name)[0]
-            pass
+                peer[0].machine_name = peer[1].replace(s, '').replace(os.path.sep, '')
+                if peer[0].machine_name is not None and len(peer[0].machine_name) > 0:
+                    peer[0].root_folder = peer[0].log_infos.root_folder.split(peer[0].machine_name)[0]
+                else:
+                    peer[0].root_folder = peer[0].log_infos.root_folder
+        except:
+            logging.exception("Unable to process names")
 
     #
     # Process all files
