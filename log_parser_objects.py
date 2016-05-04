@@ -220,6 +220,13 @@ class Log_Line(object):
         return self.__data[Headers.level]
 
     @property
+    def measure(self):
+        return self.__data[Headers.measure]
+    @measure.setter
+    def measure(self, value):
+        self.__data[Headers.measure] = value
+
+    @property
     def module(self):
         return self.__data[Headers.module]
 

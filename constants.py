@@ -21,7 +21,7 @@ ErrorLogLevels = 'OPERATING_SYSTEM|FATAL|EXCEPTION_TRACK|LEAK|STATISTIC|SYST HIG
 # Enumarates columns manipulated by the log parser for each session or log line
 #
 Headers = ListEnum(
-    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'level', 'module', 'message',
+    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'measure', 'level', 'module', 'message',
      'context'])
 IndexedHeaders = {x: i + 1 for i, x in enumerate(Headers)}
 
@@ -123,8 +123,7 @@ DEFAULT_CATEGORIES = OrderedDict([
     ('50.MAPGEN', 'REGEX=Exception(.*)Mapgen\.dll(.*)'),
     # Storage issue
     ('60.STORAGE', 'REGEX=Exception EFCreateError in module(.*)Cannot create file(.*)'),
-    ('61.STORAGE',
-     'REGEX=Exception EAbstractExternalObj in module(.*)Error into external storage extension module : Cannot create file(.*)'),
+    ('61.STORAGE', 'REGEX=Exception EAbstractExternalObj in module(.*)Error into external storage extension module : Cannot create file(.*)'),
     # Access violations & Exceptions - excluding those already categorized in previous categories
     ('70.EXCEPTIONS', 'REGEX=Access violation at address ([A-F0-9]{8})(.*)'),
     ('71.EXCEPTIONS', 'Exception'),

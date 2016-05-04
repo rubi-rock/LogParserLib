@@ -97,6 +97,10 @@ class LogXlsxWriter(object):
         self.__workbook = xlsxwriter.Workbook(filename)
         self.__worksheet = self.__workbook.add_worksheet("Log Compilation")
         self.__worksheet.tab_color = "FF3300"
+        self.__worksheet.set_paper(17)
+        self.__worksheet.fit_to_pages(1, 0)
+        self.__worksheet.set_landscape()
+        self.__worksheet.set_margins(0.5,0.5,0.5,0.5)
         self.__style_manager = StyleManager(self.__workbook)
         self.__add_header()
 

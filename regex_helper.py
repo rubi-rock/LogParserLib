@@ -133,15 +133,25 @@ class LogLineSplitter(object):
         return broken_line[len(broken_line) - 1].strip()
 
     @staticmethod
-    def extract_time_measure_from_message(message):
+    def extract_time_measure_from_message(log_line_dict):
         try:
-            if message.rstrip().endswith('!!!!!!! sec.'):
-                time_str = str(message.rsplit(': ', 1)[1].split(' ', 1)[0])
-                time_float = float(time_str) * 1000 # sec => ms
-                return time_float
+            value = 0
+            area = ''
+            if log_line_dict.level == 'STATISTIC' and log_line_dict. message.rstrip().endswith('!!!!!!! sec.'):
+                time_str = str(log_line_dict.message.rsplit(': ', 1)[1].split(' ', 1)[0])
+                value = int(float(time_str) * 1000) # sec => ms
+                area = 'stats'
+            elif log_line_dict.module == 'Mapgen.dll' and log_line_dict.message.rstrip().endswith(' ms !!'):
+                time_str = str(log_line_dict.message.rsplit('**', 1)[1].split(' ms !!', 1)[0])
+                time_float = int(time_str)  # sec => ms
+                area = 'map'
+
+            if value > 0:
+                log_line_dict.measure = value
+            return value, area
         except:
-            pass
-        return 0
+            logging.exception(str(log_line_dict))
+        return 0, ''
 
     # Low level function that is by default faster than a regular expression, which is worst here because MAPGEN logs
     # do not follow the standard log format (e.g.: mapgen.dci.exe) and this is worst when injected in an application

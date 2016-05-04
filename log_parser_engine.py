@@ -343,12 +343,11 @@ class LogFileParser(object):
 
     def __track_potential_performance_issue(self, log_line_dict):
         if self.__performance_trigger_in_ms is not None:
-            if log_line_dict.level == 'STATISTIC':
-                time_value = LogLineSplitter.extract_time_measure_from_message(log_line_dict.message)
-                if time_value > self.__performance_trigger_in_ms:
-                    log_line_dict.set_value(Headers.category, 'PERFORMANCE')
-                    self.parsed_file.add_log(log_line_dict)
-                    return True
+            time_value, area = LogLineSplitter.extract_time_measure_from_message(log_line_dict)
+            if area == 'stats' and time_value > self.__performance_trigger_in_ms or area == 'map' and time_value > 500 :
+                log_line_dict.set_value(Headers.category, 'PERFORMANCE')
+                self.parsed_file.add_log(log_line_dict)
+                return True
         return False
 
 
