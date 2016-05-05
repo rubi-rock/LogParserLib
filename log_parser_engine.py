@@ -8,7 +8,7 @@ import other_helpers
 import xml_excel_helper
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
     DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
-from log_parser_objects import log_context, Log_Line, ParsedLogFile, UserSessionStats
+from log_parser_objects import log_context, Log_Line, ParsedLogFile, UserSessionStats, MachineUserStats
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
 
@@ -149,7 +149,8 @@ class LogFileParser(object):
         try:
             log_context.clear()
             self.__cancel_callback = params[ParamNames.cancel_callback]
-            self.__add_session_callback = params[ParamNames.add_session_callback]
+            self.__start_session_callback = params[ParamNames.start_session_callback]
+            self.__end_session_callback = params[ParamNames.end_session_callback]
             self.__lines_processed = 0
             self.__re_exclusions = params[ParamNames.exclusions]
             self.__re_categories = params[ParamNames.categories]
@@ -308,7 +309,6 @@ class LogFileParser(object):
                 # 2 open session in a row without a close session implies a session that was terminated abnormaly
                 self.__close_session(crashedsession=self.__session_opened)
                 self.__open_session(log_line_dict)
-                self.__add_session_callback(self.parsed_file.parsed_file_info.fullname, log_line_dict.date)
                 return True
             elif log_line_dict is None or log_line_dict.message.startswith('END SESSION'):
                 if not self.__session_opened:
@@ -324,16 +324,23 @@ class LogFileParser(object):
             logging.exception('')
             return False
 
+    @property
+    def __current_session(self):
+        return self.__parsed_file.current_session
+
     def __open_session(self, log_dict=None):
         self.__parsed_file.open_session(log_dict)
         self.__session_opened = True
+        self.__start_session_callback(self.__current_session)
 
     def add_misaligned_ended_session(self, log_dict):
         self.__parsed_file.add_misaligned_ended_session(log_dict)
 
     def __close_session(self, crashedsession=False):
+        session = self.__current_session
         self.__parsed_file.close_session(crashedsession)
         self.__session_opened = False
+        self.__end_session_callback(session)
 
     def __add_session_info(self, dict):
         self.__parsed_file.add_session_info(dict)
@@ -373,6 +380,7 @@ class FolderLogParser(object):
             self.__log_file_info_list = []
             self.__parsed_files = []
             self.__session_stats = UserSessionStats()
+            self.__machine_user_stats = MachineUserStats()
             self.__files_processed = 0
             self.__lines_parsed = 0
             self.__lines_to_analyze_count = 0
@@ -430,6 +438,10 @@ class FolderLogParser(object):
     def session_stats(self):
         return self.__session_stats
 
+    @property
+    def machine_user_stats(self):
+        return self.__machine_user_stats
+
     def filter_on_date(self, log_file_info_to_filter):
         try:
             # Just ignore the MAPGEN files, their format is not as expected (Purkinje Standard Log Format as implemented
@@ -449,31 +461,36 @@ class FolderLogParser(object):
             # keeps only files that are in the requested date range - be careful: logs changed recently can contain logs
             # requested from an older date. Therefore the filter can apply only on the end date.
             filtered_in = self.__min_date <= log_file_info_to_filter.date
-            logging.info('Log file filtered %s: %s', self.__filtering_status[filtered_in],
-                         log_file_info_to_filter.fullname)
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info('Log file filtered %s: %s', self.__filtering_status[filtered_in],
+                             log_file_info_to_filter.fullname)
             return filtered_in
         except Exception:
             logging.exception('')
             raise
 
-    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None, autoopen=True):
+    def parse(self, root_path, log_levels_filtered_in=DEFAULT_LOG_LEVELS, min_date=MIN_DATE, max_date=MAX_DATE, output=None, splitfilename=True, autoopen=True):
         try:
             self.__processing_stats = []
             self.__filtered_in_levels = log_levels_filtered_in
             self.prepare_levels()
             self.__root_parth = root_path
+            self.__splitfilename = splitfilename
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
             self.__output = output
+
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
             log_text = "{0} files found:".format(len(self.__log_file_info_list))
-            logging.info(log_text)
             self.__provide_feedback(**{StatusBarValues.text: log_text})
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info(log_text)
 
             for log_file in self.__log_file_info_list:
-                logging.info( '\t' + log_file.fullname)
                 self.__provide_feedback(**{StatusBarValues.text: '\t' + log_file.fullname})
+                if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                    logging.info( '\t' + log_file.fullname)
 
             self.do_parse_files(autoopen)
         except Exception:
@@ -494,8 +511,11 @@ class FolderLogParser(object):
         for key, level in self.__filtered_in_levels.items():
             self.__filtered_in_levels[key] = '[{0}]'.format(level.upper())
 
-    def __add_session_callback(self, logfilename, date):
-        self.__session_stats.add_session(logfilename, date)
+    def __start_session_callback(self, session):
+        self.__session_stats.start_session(session)
+
+    def __end_session_callback(self, session):
+        self.__session_stats.end_session(session)
 
     def parse_one_file(self, file_info_to_parse):
         lt = other_helpers.ProcessTimer()
@@ -507,7 +527,8 @@ class FolderLogParser(object):
                       ParamNames.filtered_in_levels: self.__filtered_in_levels,
                       ParamNames.min_date: self.__min_date, ParamNames.max_date: self.__max_date,
                       ParamNames.cancel_callback: self.__cancel_callback,
-                      ParamNames.add_session_callback: self.__add_session_callback}
+                      ParamNames.start_session_callback: self.__start_session_callback,
+                      ParamNames.end_session_callback: self.__end_session_callback}
             log_parser = LogFileParser(**params)
             self.__processed_file_count += 1
             parsed_file = log_parser.parsed_file
@@ -515,8 +536,9 @@ class FolderLogParser(object):
                 self.__parsed_files.append(parsed_file)
             else:
                 log_text = "\tDone: {0} does not contains any lines to analyze".format(parsed_file.parsed_file_info.fullname)
-                logging.info(log_text)
                 self.__provide_feedback(**{StatusBarValues.text: log_text})
+                if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                    logging.info(log_text)
 
             self.__lines_parsed += log_parser.lines_processed
 
@@ -572,13 +594,49 @@ class FolderLogParser(object):
     def files_processed(self):
         return self.__processed_file_count
 
+    #
+    # extract machine name when possible
+    #
+    def __process_names(self):
+        try:
+            peer_list = []
+            for parsed_file in self.__parsed_files:
+                peer_list.append([parsed_file, parsed_file.root_folder])
+            if len(peer_list) == 0:
+                return
+            objs, folders = zip(*peer_list)
+            s = other_helpers.get_longest_common_subseq(folders)
+            if s is None:
+                return
+            parts = s.rsplit(os.path.sep, 1)
+            if len(parts) > 1:
+                root_path = parts[0]
+                for peer in peer_list:
+                    peer[1] = peer[1].replace(root_path, '')
+            objs, folders = zip(*peer_list)
+            s = other_helpers.get_longest_common_subseq(folders)
+            if s is None:
+                return
+            for peer in peer_list:
+                peer[0].machine_name = peer[1].replace(s, '').replace(os.path.sep, '')
+                if peer[0].machine_name is not None and len(peer[0].machine_name) > 0:
+                    peer[0].root_folder = peer[0].log_infos.root_folder.split(peer[0].machine_name)[0]
+                else:
+                    peer[0].root_folder = peer[0].log_infos.root_folder
+        except:
+            logging.exception("Unable to process names")
+
+    #
+    # Process all files
+    #
     def do_parse_files(self, autoopen=True):
         self.__timer = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
             log_text = "Start processing log files..."
             self.__provide_feedback(**{StatusBarValues.text: log_text})
-            logging.info(log_text)
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info(log_text)
             self.__files_processed = 0
             for file_info in self.__log_file_info_list:
                 try:
@@ -589,6 +647,8 @@ class FolderLogParser(object):
                         break
                 except Exception:
                     logging.exception('')
+
+            self.__process_names()
 
             log_text = "Processing log files done with a total of {0} files and {1} lines parsed in {2} sec. Output: {3} files with {4} sessions containing a total of {5} lines to process!!!".format(
                 self.__processed_file_count, self.lines_parsed, pt.time_to_str, self.preserved_files_count,
@@ -608,6 +668,7 @@ class FolderLogParser(object):
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
 
+            self.__machine_user_stats.process(self)
             self.save_result_to_xlsx_file(self.__output)
 
             if autoopen:
@@ -625,15 +686,17 @@ class FolderLogParser(object):
 
             time_per_line = pt.time / self.total_lines_to_analyze if self.total_lines_to_analyze > 0 else 0
             log_text = "Saved in CSV file {0}".format(xslx_file_name)
-            logging.info(log_text)
             self.__provide_feedback(**{StatusBarValues.text: log_text})
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info(log_text)
 
             log_text = "Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                 et.time_to_str,
                 time_per_line * 1000,
                 round(60 * self.total_lines_to_analyze / (pt.time if pt.time > 0 else 1)))
-            logging.info(log_text)
             self.__provide_feedback(**{StatusBarValues.text: log_text})
+            if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+                logging.info(log_text)
         except Exception:
             logging.exception('')
             raise

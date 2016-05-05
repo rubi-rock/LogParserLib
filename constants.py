@@ -21,7 +21,7 @@ ErrorLogLevels = 'OPERATING_SYSTEM|FATAL|EXCEPTION_TRACK|LEAK|STATISTIC|SYST HIG
 # Enumarates columns manipulated by the log parser for each session or log line
 #
 Headers = ListEnum(
-    ['file', 'date', 'time', 'type', 'session', 'group', 'has_crashed', 'category', 'measure', 'level', 'module', 'message',
+    ['file', 'date', 'time', 'type', 'session', 'user', 'application', 'machine', 'group', 'has_crashed', 'category', 'measure', 'level', 'module', 'message',
      'context'])
 IndexedHeaders = {x: i + 1 for i, x in enumerate(Headers)}
 
@@ -41,7 +41,7 @@ StatusBarValues = ListEnum(
 #
 ParamNames = ListEnum(
     ['file_info', 'session_info', 'exclusions', 'categories', 'filtered_in_levels', 'min_date', 'max_date',
-     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context', 'cancel_callback', 'add_session_callback'])
+     'save_file_by_file', 'performance_trigger_in_ms', 'provide_context', 'cancel_callback', 'start_session_callback', 'end_session_callback'])
 
 # Be careful: this one does not use regular expression nor upper or any facilitator for performance reasons.
 # Therefore the text we are looking for must be exactly this one and with this case.
