@@ -662,7 +662,7 @@ class FolderLogParser(object):
             log_text = "Elapsed time: {0} sec., average {1} msec. per line or {2} lines per minute".format(
                 self.__timer.time_to_str,
                 time_per_line * 1000,
-                round(60 * self.lines_parsed / pt.time))
+                round(60 * self.lines_parsed / (pt.time if pt.time > 0 else 1)))
             self.__provide_feedback(**{StatusBarValues.text: log_text})
 
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:

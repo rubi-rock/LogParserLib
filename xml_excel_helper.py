@@ -196,29 +196,54 @@ class LogXlsxWriter(object):
         total_start_pos = starting_row
 
         format = self.__style_manager.get_format(RowTypes.file, StyleType.default, '')
-        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 0) + ':' + xl_rowcol_to_cell(row_pos, 4), title, format)
+        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 0) + ':' + xl_rowcol_to_cell(row_pos, 5), title, format)
 
         for category_type, category_value in grid_dict.items():
             row_pos += 1
             format = self.__style_manager.get_format(RowTypes.session, StyleType.default, '')
-            stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 4), category_type, format)
+            stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 5), category_type, format)
 
             section_idx = 0
             for subcategory_type, subcategory_value in category_value.items():
                 row_pos += 1
                 section_idx += 1
+                value_is_multiple_columns = False
                 format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if section_idx % 2 == 1 else StyleType.alt2, '')
-                stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 4), subcategory_type, format)
+
+                for name, value in subcategory_value.items():
+                    if type(value) is dict:
+                        value_is_multiple_columns = True
+                    break
+
+                if value_is_multiple_columns:
+                    i = 0
+                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 3), subcategory_type, format)
+                    for x in value.keys():
+                        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4 + i), x.replace('_', ' '), format)
+                        i += 1
+                else:
+                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 5), subcategory_type, format)
+
                 total_start_pos = row_pos + 1
                 for name, value in subcategory_value.items():
                     row_pos += 1
                     stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), name)
-                    stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), value)
+                    if type(value) is dict:
+                        i = 0
+                        for x in value.values():
+                            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4 + i), x)
+                            i += 1
+                    else:
+                        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), value)
 
                 row_pos += 1
                 format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
                 stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Total:', format)
                 stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=SUM(E{0}:E{1})'.format(total_start_pos, row_pos), format)
+                if value_is_multiple_columns:
+                    stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 5), '=SUM(F{0}:F{1})'.format(total_start_pos, row_pos), format)
+                else:
+                    stats_worksheet.write(xl_rowcol_to_cell(row_pos, 5), '', format)
 
         return row_pos + 1      # +1 for some space
 
@@ -230,7 +255,8 @@ class LogXlsxWriter(object):
         stats_worksheet.set_column('B:B', 15)
         stats_worksheet.set_column('C:C', 15)
         stats_worksheet.set_column('D:D', 15)
-        stats_worksheet.set_column('E:E', 15)
+        stats_worksheet.set_column('E:E', 25)
+        stats_worksheet.set_column('F:F', 25)
         rowpos = self.__write_dict(0, stats_worksheet, 'Applications', self.__log_folder_parser.machine_user_stats.applications)
         rowpos = self.__write_dict(rowpos, stats_worksheet, 'Users', self.__log_folder_parser.machine_user_stats.users)
         rowpos = self.__write_dict(rowpos, stats_worksheet, 'Machines', self.__log_folder_parser.machine_user_stats.machines)
@@ -283,8 +309,8 @@ class LogXlsxWriter(object):
         self.__worksheet.autofilter(0, 0, self.__log_folder_parser.files_and_sessions_and_lines_count , len(Headers) - 1)
 
         self.__add_log_entries()
-        self.__add_session_stats()
         self.__add_machine_user_stats()
+        self.__add_session_stats()
         self.__add_processing_stats()
 
         self.__workbook.close()

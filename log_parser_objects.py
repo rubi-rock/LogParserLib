@@ -403,7 +403,15 @@ class ParsedLogFile(object):
     def session_count(self):
         return len(self.__sessions)
 
-    # Returns the line count - all file's sessions together
+    @property
+    def abnormal_terminated_session_count(self):
+        count = 0
+        for session in self.__sessions:
+            if session.has_crashed:
+                count += 1
+        return count
+
+                # Returns the line count - all file's sessions together
     @property
     def lines_count(self):
         return sum(session.lines_count for session in self.__sessions)
@@ -587,6 +595,26 @@ class MachineUserStats(object):
         self.__items['applications'] = {}
         self.__items['machines'] = {}
 
+    def __create_stats_slot(self, application, user, machine):
+        if user not in self.__items['applications'][application]['users'].keys():
+            self.__items['applications'][application]['users'][user] = {'errors' : 0, 'abnormal_termination': 0}
+        if machine not in self.__items['applications'][application]['machines'].keys():
+            self.__items['applications'][application]['machines'][machine] = {'errors' : 0, 'abnormal_termination': 0}
+
+
+    def __process_session(self, session, user, application, machine):
+        # Creates stats for the user
+        self.__items['users'][user]['applications'][application] = session.lines_count + ( self.__items['users'][user]['applications'][application] if application in self.__items['users'][user]['applications'] else 0)
+        self.__items['users'][user]['machines'][machine] = session.lines_count + (self.__items['users'][user]['machines'][machine] if machine in self.__items['users'][user]['machines'] else 0)
+        # Creates stats for the application
+        self.__create_stats_slot(application, user, machine)
+        self.__items['applications'][application]['users'][user]['errors'] = session.lines_count + (self.__items['applications'][application]['users'][user]['errors'] if user in self.__items['applications'][application]['users'] else 0)
+        self.__items['applications'][application]['users'][user]['abnormal_termination'] = self.__items['applications'][application]['users'][user]['abnormal_termination'] + 1 if session.has_crashed else  self.__items['applications'][application]['users'][user]['abnormal_termination']
+        self.__items['applications'][application]['machines'][machine]['errors'] = session.lines_count + (self.__items['applications'][application]['machines'][machine]['errors'] if machine in self.__items['applications'][application]['machines'] else 0)
+        self.__items['applications'][application]['machines'][machine]['abnormal_termination'] = session.lines_count + (self.__items['applications'][application]['machines'][machine]['abnormal_termination'] if machine in self.__items['applications'][application]['machines'] else 0)
+        # Creates stats for the machine
+        self.__items['machines'][machine]['users'][user] = session.lines_count + (self.__items['machines'][machine]['users'][user] if user in self.__items['machines'][machine]['users'] else 0)
+        self.__items['machines'][machine]['applications'][application] = session.lines_count + (self.__items['machines'][machine]['applications'][application] if application in self.__items['machines'][machine]['applications'] else 0)
 
     def process(self, log_folder_parser):
         # List machine names (or folders, let's the reader to cleanup names')
@@ -612,16 +640,7 @@ class MachineUserStats(object):
             if application.lower() == 'PURKINJE':
                 continue
             for session in parsed_file.sessions:
-                # Creates stats for the user
-                self.__items['users'][user]['applications'][application] = session.lines_count + (self.__items['users'][user]['applications'][application] if application in self.__items['users'][user]['applications'] else 0)
-                self.__items['users'][user]['machines'][machine] = session.lines_count + (self.__items['users'][user]['machines'][machine] if machine in self.__items['users'][user]['machines'] else 0)
-                # Creates stats for the application
-                self.__items['applications'][application]['users'][user] = session.lines_count + (self.__items['applications'][application]['users'][user] if user in self.__items['applications'][application]['users'] else 0)
-                self.__items['applications'][application]['machines'][machine] = session.lines_count + (self.__items['applications'][application]['machines'][machine] if machine in self.__items['applications'][application]['machines'] else 0)
-                # Creates stats for the machine
-                self.__items['machines'][machine]['users'][user] = session.lines_count + (self.__items['machines'][machine]['users'][user] if user in self.__items['machines'][machine]['users'] else 0)
-                self.__items['machines'][machine]['applications'][application] = session.lines_count + (self.__items['machines'][machine]['applications'][application] if application in self.__items['machines'][machine]['applications'] else 0)
-
+                self.__process_session(session, user, application, machine)
     @property
     def items(self):
         return self.__items
