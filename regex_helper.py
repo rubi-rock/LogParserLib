@@ -141,9 +141,9 @@ class LogLineSplitter(object):
                 time_str = str(log_line_dict.message.rsplit(': ', 1)[1].split(' ', 1)[0])
                 value = int(float(time_str) * 1000) # sec => ms
                 area = 'stats'
-            elif log_line_dict.module == 'Mapgen.dll' and log_line_dict.message.rstrip().endswith(' ms !!'):
+            elif log_line_dict.module is not None and log_line_dict.module.startswith('Mapgen') and log_line_dict.message.rstrip().endswith(' ms !!'):
                 time_str = str(log_line_dict.message.rsplit('**', 1)[1].split(' ms !!', 1)[0])
-                time_float = int(time_str)  # sec => ms
+                value = int(time_str)  # trunc less than millisecs
                 area = 'map'
 
             if value > 0:

@@ -2,7 +2,9 @@ import copy
 import logging
 import os
 from datetime import datetime, date, timedelta
+from fuzzywuzzy import fuzz
 
+import other_helpers
 from constants import Headers, LOG_LEVEL_LIST, RowTypes
 from other_helpers import ListEnum
 from regex_helper import StringDateHelper
@@ -661,3 +663,53 @@ class MachineUserStats(object):
     def machines(self):
         return self.__items['machines']
 
+
+class Similarity(object):
+    def __init__(self):
+        self.__message = ''
+        self.__matches = {}
+
+    @property
+    def matches(self):
+        return self.__matches
+
+class LogsSimilaritiyProcessor(object):
+    def __init__(self):
+        self.__similarities = {}
+
+    @property
+    def similarities(self):
+        return self.__similarities.values()
+
+    def __prepare_data(self, log_folder_parser):
+        lines = []
+        for logfile in log_folder_parser.parsed_files:
+            for session in logfile.sessions:
+                for line in session.lines:
+                    lines.append(line)
+        return lines
+
+    def process(self, log_folder_parser):
+        lines = self.__prepare_data(log_folder_parser)
+
+        # 1st pass: collect exact matching
+        lt = other_helpers.ProcessTimer()
+        for line in lines:
+            if line.message not in self.__similarities.keys():
+                self.__similarities[line.message] = {}
+                self.__similarities[line.message]['message'] = line.message
+                self.__similarities[line.message]['match'] = [{'ratio': 100, 'block': line}]
+            else:
+                self.__similarities[line.message]['match'].append({'ratio': 100, 'block': line})
+        print('Matching lines'.format(lt.time_to_str))
+
+        # Fuzzy Match
+        for text, block in self.__similarities.items():
+            for subtext, subblock in self.__similarities.items():
+                if id(subblock) == id(block):
+                    continue
+                fuzz_ratio = fuzz.ratio(text, subtext)
+                if fuzz_ratio >= 85:     #   85% identical? <- seems to be a fairly good threshold
+                    for match in subblock['match']:
+                        if match['ratio'] == 100:
+                            block['match'].append({'ratio': fuzz_ratio, 'block': match['block']})

@@ -8,7 +8,7 @@ import other_helpers
 import xml_excel_helper
 from constants import Headers, ParamNames, DefaultSessionInfo, DEFAULT_EXCLUSIONS, DEFAULT_LOG_LEVELS, StatusBarValues, \
     DEFAULT_CATEGORIES, DEFAULT_PERFORMANCE_TRIGGER_IN_MS, DEFAULT_CONTEXT_LENGTH, MIN_DATE, MAX_DATE
-from log_parser_objects import log_context, Log_Line, ParsedLogFile, UserSessionStats, MachineUserStats
+from log_parser_objects import log_context, Log_Line, ParsedLogFile, UserSessionStats, MachineUserStats, LogsSimilaritiyProcessor
 from os_path_helper import FileSeeker
 from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
 
@@ -381,6 +381,7 @@ class FolderLogParser(object):
             self.__parsed_files = []
             self.__session_stats = UserSessionStats()
             self.__machine_user_stats = MachineUserStats()
+            self.__log_similiatities = LogsSimilaritiyProcessor()
             self.__files_processed = 0
             self.__lines_parsed = 0
             self.__lines_to_analyze_count = 0
@@ -441,6 +442,10 @@ class FolderLogParser(object):
     @property
     def machine_user_stats(self):
         return self.__machine_user_stats
+
+    @property
+    def log_similiatities(self):
+        return self.__log_similiatities
 
     def filter_on_date(self, log_file_info_to_filter):
         try:
@@ -668,7 +673,16 @@ class FolderLogParser(object):
             if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
                 logging.info(log_text)
 
+            et = other_helpers.ElapseTimer()
+            self.__provide_simple_text_feedback("Processing crossed statistics: Machine vs User vs Application...")
             self.__machine_user_stats.process(self)
+            self.__provide_simple_text_feedback("Processing crossed statistics done - {0}".format(et.time_to_str))
+
+            et = other_helpers.ElapseTimer()
+            self.__provide_simple_text_feedback("Processing log similarities...")
+            self.__log_similiatities.process(self)
+            self.__provide_simple_text_feedback("Processing similarities done - {0}".format(et.time_to_str))
+
             self.save_result_to_xlsx_file(self.__output)
 
             if autoopen:
@@ -700,3 +714,8 @@ class FolderLogParser(object):
         except Exception:
             logging.exception('')
             raise
+
+    def __provide_simple_text_feedback(self, log_text):
+        self.__provide_feedback(**{StatusBarValues.text: log_text})
+        if DETAILLED_LOGGING_LEVEL >= DETAILLED_LOGGING_FILE:
+            logging.info(log_text)
