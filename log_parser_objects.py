@@ -472,7 +472,7 @@ class ParsedLogFile(object):
         row[Headers.type] = RowTypes.file
         row[Headers.user] = self.__log_infos.user
         row[Headers.application] = self.__log_infos.application
-        row[Headers.machine] = self.__log_infos.machine
+        row[Headers.machine] = self.__log_infos.machine_name
         row[Headers.file] = self.parsed_file_info.fullname
         row[Headers.date] = self.parsed_file_info.date.date()
         row[Headers.time] = self.parsed_file_info.date.time()

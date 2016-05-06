@@ -132,7 +132,7 @@ class LogXlsxWriter(object):
         header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
         self.__worksheet.set_header(header)
 
-        self.__worksheet.autofilter(2, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
+        self.__worksheet.autofilter(3, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
         self.__row_count = 3
 
         header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
@@ -302,15 +302,15 @@ class LogXlsxWriter(object):
             logging.exception('Unable to add line to excel file:' + str(row))
 
     def save(self):
-        self.__worksheet.set_column('A:A', 40)
+        self.__worksheet.set_column('A:A', 35)
         self.__worksheet.set_column('B:F', 12)
         self.__worksheet.set_column('G:J', 8)
-        self.__worksheet.set_column('K:M', 15)
-        self.__worksheet.set_column('N:N', 55)
-        self.__worksheet.set_column('O:O', 55)
+        self.__worksheet.set_column('K:N', 15)
+        self.__worksheet.set_column('O:O', 45)
+        self.__worksheet.set_column('P:P', 55)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
-        self.__worksheet.merge_range("A1:O1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date, self.__log_folder_parser.to_date), format)
+        self.__worksheet.merge_range("A1:P1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date, self.__log_folder_parser.to_date), format)
 
         self.__add_log_entries()
         self.__add_machine_user_stats()
