@@ -275,24 +275,22 @@ class LogXlsxWriter(object):
         stats_worksheet.set_column('D:D', 30)
         stats_worksheet.write('D1', 'Reference', format)
 
-    def __write_similiarities_block_master(self, stats_worksheet, block, row_pos):
+    def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
-        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 0) + ':' + xl_rowcol_to_cell(row_pos, 2), block['message'], format)
+        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 0) + ':' + xl_rowcol_to_cell(row_pos, 2), '(x{0}) - {1}'.format(len(similarity.matches), similarity.message), format)
         format = self.__style_manager.get_format(RowTypes.session, StyleType.url_crashed, '')
-        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( block['match'][0]['block'].excel_cell), format)
+        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( similarity.log_line.excel_cell), format)
         row_pos += 1
         return row_pos
 
-    def __write_similiarities_block_detailled(self, stats_worksheet, block, row_pos):
-        iterable_similarities = iter(block['match'])
-        next(iterable_similarities)  # the 1st one is "itself" = the master <> of a detailled item
-        for fuzz in iterable_similarities:
-            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if fuzz['ratio'] == 100 else StyleType.alt2, '')
+    def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
+        for match in similarity.matches:
+            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, '')
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), '', format)
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), fuzz['ratio'], format)
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), fuzz['block'].message, format)
-            format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if fuzz['ratio'] == 100 else StyleType.url_alt2, '')
-            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(fuzz['block'].excel_cell), format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), match.ratio, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.message, format)
+            format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
+            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
             row_pos += 1
         return row_pos
 
@@ -304,8 +302,6 @@ class LogXlsxWriter(object):
 
         row_pos = 1
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
-            if len(similarity['match']) < 2:   # skip those without any similarity (0 does not exist, 1 is itself)
-                continue
             row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
             row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos)
 
