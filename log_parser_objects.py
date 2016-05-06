@@ -708,7 +708,7 @@ class SimilarityList(object):
             self.__matches[log_line.message].add_match(log_line, 100)
 
     def add_reference(self, message, log_line, ratio):
-        self.__matches[message].add_match(log_line, 100)
+        self.__matches[message].add_match(log_line, ratio)
 
     def compact(self):
         # Fuzzy Match
