@@ -132,6 +132,9 @@ class LogXlsxWriter(object):
         header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
         self.__worksheet.set_header(header)
 
+        self.__worksheet.autofilter(2, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
+        self.__row_count = 3
+
         header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
         for header in Headers:
             self.__worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
@@ -237,7 +240,6 @@ class LogXlsxWriter(object):
                         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), value)
 
                 row_pos += 1
-                format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
                 stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Total:', format)
                 stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=SUM(E{0}:E{1})'.format(total_start_pos, row_pos), format)
                 if value_is_multiple_columns:
@@ -278,6 +280,7 @@ class LogXlsxWriter(object):
         self.__row_count += 1
 
     def __add_log_entries(self):
+        row = {}
         try:
             # dump the file
             for parsed_file in self.__log_folder_parser.parsed_files:
@@ -306,7 +309,8 @@ class LogXlsxWriter(object):
         self.__worksheet.set_column('N:N', 55)
         self.__worksheet.set_column('O:O', 55)
 
-        self.__worksheet.autofilter(0, 0, self.__log_folder_parser.files_and_sessions_and_lines_count , len(Headers) - 1)
+        format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
+        self.__worksheet.merge_range("A1:O1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date, self.__log_folder_parser.to_date), format)
 
         self.__add_log_entries()
         self.__add_machine_user_stats()
