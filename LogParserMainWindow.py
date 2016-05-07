@@ -455,16 +455,18 @@ class Ui_MainWindow(object):
         self.tabWidget_General.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.tabWidget_General, self.edt_Path)
-        MainWindow.setTabOrder(self.edt_Path, self.btn_SelectDir)
-        MainWindow.setTabOrder(self.btn_SelectDir, self.date_To)
+        MainWindow.setTabOrder(self.edt_Path, self.date_From)
+        MainWindow.setTabOrder(self.date_From, self.date_To)
         MainWindow.setTabOrder(self.date_To, self.spin_perfTrigger)
         MainWindow.setTabOrder(self.spin_perfTrigger, self.spin_contextLOL)
-        MainWindow.setTabOrder(self.spin_contextLOL, self.edt_output)
+        MainWindow.setTabOrder(self.spin_contextLOL, self.chk_splitFilePath)
+        MainWindow.setTabOrder(self.chk_splitFilePath, self.edt_output)
         MainWindow.setTabOrder(self.edt_output, self.chk_AutoOpen)
         MainWindow.setTabOrder(self.chk_AutoOpen, self.edt_console)
-        MainWindow.setTabOrder(self.edt_console, self.edt_Exclusions)
+        MainWindow.setTabOrder(self.edt_console, self.listWidget_LogLevels)
+        MainWindow.setTabOrder(self.listWidget_LogLevels, self.edt_Exclusions)
         MainWindow.setTabOrder(self.edt_Exclusions, self.edt_Categories)
-        MainWindow.setTabOrder(self.edt_Categories, self.listWidget_LogLevels)
+        MainWindow.setTabOrder(self.edt_Categories, self.btn_SelectDir)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

@@ -692,7 +692,7 @@ class SimilarityMatches(Similarity):
         self.__matches.append(new_match)
 
     @property
-    def matches(self):
+    def matches(self, similarity):
         return self.__matches
 
 
@@ -722,6 +722,7 @@ class SimilarityList(object):
 
         # flush those with just no matches except themselves
         self.__matches = [similirity for similirity in self.__matches.values() if len(similirity.matches) > 0]
+        self.__matches = sorted(self.__matches, key=getattr('ratio'), reverse=True)
 
     @property
     def values(self):

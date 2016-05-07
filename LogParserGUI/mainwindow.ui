@@ -1043,16 +1043,18 @@
  <tabstops>
   <tabstop>tabWidget_General</tabstop>
   <tabstop>edt_Path</tabstop>
-  <tabstop>btn_SelectDir</tabstop>
+  <tabstop>date_From</tabstop>
   <tabstop>date_To</tabstop>
   <tabstop>spin_perfTrigger</tabstop>
   <tabstop>spin_contextLOL</tabstop>
+  <tabstop>chk_splitFilePath</tabstop>
   <tabstop>edt_output</tabstop>
   <tabstop>chk_AutoOpen</tabstop>
   <tabstop>edt_console</tabstop>
+  <tabstop>listWidget_LogLevels</tabstop>
   <tabstop>edt_Exclusions</tabstop>
   <tabstop>edt_Categories</tabstop>
-  <tabstop>listWidget_LogLevels</tabstop>
+  <tabstop>btn_SelectDir</tabstop>
  </tabstops>
  <resources>
   <include location="icons.qrc"/>
