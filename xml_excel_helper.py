@@ -265,21 +265,25 @@ class LogXlsxWriter(object):
         return row_pos + 1      # +1 for some space
 
     def __write_similarities_header(self, stats_worksheet):
-        stats_worksheet.set_column('A:A', 10)
         format = self.__style_manager.get_format(RowTypes.file, StyleType.default, '')
-        stats_worksheet.write('A1', 'Message', format)
+        stats_worksheet.set_column('A:A', 10)
+        stats_worksheet.write('A1', 'Count', format)
         stats_worksheet.set_column('B:B', 10)
-        stats_worksheet.write('B1', 'Ratio (%)', format)
-        stats_worksheet.set_column('C:C', 100)
-        stats_worksheet.write('C1', 'Matched Message (identical, similar, maybe in cascade)', format)
-        stats_worksheet.set_column('D:D', 30)
-        stats_worksheet.write('D1', 'Reference', format)
+        stats_worksheet.write('B1', 'Message', format)
+        stats_worksheet.set_column('C:C', 10)
+        stats_worksheet.write('C1', 'Ratio (%)', format)
+        stats_worksheet.set_column('D:D', 120)
+        stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
+        stats_worksheet.set_column('E:E', 30)
+        stats_worksheet.write('E1', 'Reference', format)
 
     def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
-        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 0) + ':' + xl_rowcol_to_cell(row_pos, 2), '(x{0}) - {1}'.format(len(similarity.matches), similarity.message), format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), len(similarity.matches), format)
+        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 3), similarity.message, format)
+        stats_worksheet.set_row(row_pos, 30)
         format = self.__style_manager.get_format(RowTypes.session, StyleType.url_crashed, '')
-        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( similarity.log_line.excel_cell), format)
+        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( similarity.log_line.excel_cell), format)
         row_pos += 1
         return row_pos
 
@@ -287,10 +291,11 @@ class LogXlsxWriter(object):
         for match in similarity.matches:
             format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, '')
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), '', format)
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), match.ratio, format)
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.message, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), '', format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.ratio, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
             format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
-            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 3), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
+            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
             row_pos += 1
         return row_pos
 
