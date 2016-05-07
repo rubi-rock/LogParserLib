@@ -692,7 +692,7 @@ class SimilarityMatches(Similarity):
         self.__matches.append(new_match)
 
     @property
-    def matches(self, similarity):
+    def matches(self):
         return self.__matches
 
 
