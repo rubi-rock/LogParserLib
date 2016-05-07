@@ -746,12 +746,17 @@ class LogsSimilaritiyProcessor(object):
 
     def process(self, log_folder_parser):
         lt = other_helpers.ProcessTimer()
+        msg = 'Matching lines similarities...'
+        logging.info(msg)
+
         # 1st pass: collect exact matching
         for logfile in log_folder_parser.parsed_files:
             for session in logfile.sessions:
                 for line in session.lines:
                     self.__similarities.load_item( line, 100)
 
+        # 2nd pass: find similarities and compact results (remove entries without similiarities)
         self.__similarities.compact()
 
-        print('Matching lines'.format(lt.time_to_str))
+        msg = 'Matching done - {0} for {1} resulting blocks of lines'.format(lt.time_to_str, len(self.__similarities.items))
+        logging.info(msg)
