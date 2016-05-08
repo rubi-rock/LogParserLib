@@ -701,9 +701,11 @@ class SimilarityMatches(Similarity):
     def matches(self):
         return self.__matches
 
+    @property
+    def sorted(self):
+        self.__matches = sorted(self.__matches, key=lambda x: x.ratio, reverse=True)
+        return self
 
-def getKey(custom):
-    return custom.ratio
 
 class SimilarityList(object):
     def __init__(self):
@@ -730,7 +732,8 @@ class SimilarityList(object):
                     self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
 
         # flush those with just no matches except themselves
-        self.__matches = [similirity for similirity in self.__matches.values() if len(similirity.matches) > 0]
+        self.__matches = [similirity.sorted for similirity in self.__matches.values() if len(similirity.matches) > 0]
+        self.__matches = sorted(self.__matches, key=lambda x: len(x.matches), reverse=True)
 
     @property
     def values(self):
@@ -742,7 +745,7 @@ class SimilarityList(object):
 
     @property
     def items(self):
-        return sorted(self.__matches, key=lambda x: x.ratio, reverse=True)
+        return self.__matches
 
 
 class LogsSimilaritiyProcessor(object):
