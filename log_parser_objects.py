@@ -669,6 +669,12 @@ class Similarity(object):
         self.__log_line = log_line
         self.__ratio = ratio
 
+    def __repr__(self):
+        return '{0} - {1}'.format(self.ratio, self.log_line.message)
+
+    def __cmp__(self, other):
+        return self.ratio.__cmp__(other.ratio)
+
     @property
     def message(self):
         return self.__log_line.message
@@ -696,6 +702,9 @@ class SimilarityMatches(Similarity):
         return self.__matches
 
 
+def getKey(custom):
+    return custom.ratio
+
 class SimilarityList(object):
     def __init__(self):
         self.__matches = {}
@@ -722,7 +731,6 @@ class SimilarityList(object):
 
         # flush those with just no matches except themselves
         self.__matches = [similirity for similirity in self.__matches.values() if len(similirity.matches) > 0]
-        self.__matches = sorted(self.__matches, key=getattr('ratio'), reverse=True)
 
     @property
     def values(self):
@@ -734,7 +742,7 @@ class SimilarityList(object):
 
     @property
     def items(self):
-        return self.__matches
+        return sorted(self.__matches, key=lambda x: x.ratio, reverse=True)
 
 
 class LogsSimilaritiyProcessor(object):
