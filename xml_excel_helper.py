@@ -119,16 +119,17 @@ class LogXlsxWriter(object):
     def __init__(self, log_folder_parser, filename):
         self.__log_folder_parser = log_folder_parser
         self.__row_count = 0
-
         self.__workbook = xlsxwriter.Workbook(filename)
-        self.__worksheet = self.__workbook.add_worksheet("Log Compilation")
-        self.__worksheet.tab_color = "FF3300"
-        self.__worksheet.set_paper(17)
-        self.__worksheet.fit_to_pages(1, 0)
-        self.__worksheet.set_landscape()
-        self.__worksheet.set_margins(0.5,0.5,0.5,0.5)
         self.__style_manager = StyleManager(self.__workbook)
-        self.__add_header()
+
+    def __create_worksheet(self, name, color):
+        worksheet = self.__workbook.add_worksheet(name)
+        worksheet.tab_color = color
+        worksheet.set_paper(17)
+        worksheet.fit_to_pages(1, 0)
+        worksheet.set_landscape()
+        worksheet.set_margins(0.5,0.5,0.5,0.5)
+        return worksheet
 
     def __cell_coord(self, col_name, rowtype, row = None):
         if row is None:
@@ -140,43 +141,42 @@ class LogXlsxWriter(object):
             cell = cell + ':' + cell1
         return cell
 
-    def __add_header(self):
+    def __add_header(self, worksheet):
         header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
-        self.__worksheet.set_header(header)
+        worksheet.set_header(header)
 
-        self.__worksheet.autofilter(3, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
+        worksheet.autofilter(3, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
         self.__row_count = 3
 
         header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
         for header in Headers:
-            self.__worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
+            worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
         self.__row_count += 1
 
 
-    def append_row(self, row_as_csv, rowtype, styletype):
+    def __append_row(self, worksheet, row_as_csv, rowtype, styletype):
         for column_name in Headers:
             cell = self.__cell_coord(column_name, rowtype)
 
+            format = self.__style_manager.get_format(rowtype, styletype, column_name)
             if column_name in row_as_csv.keys():
                 value = row_as_csv[column_name]
-                format = self.__style_manager.get_format(rowtype, styletype, column_name)
                 if column_name == Headers.file:
-                    self.__worksheet.write_url(cell, r'external:' + value, format)
+                    worksheet.write_url(cell, r'external:' + value, format)
                 elif rowtype == RowTypes.session and column_name == Headers.message:
-                    self.__worksheet.merge_range(cell, str(value) if type(value) is bytes else value, format)
+                    worksheet.merge_range(cell, str(value) if type(value) is bytes else value, format)
                 else:
-                    self.__worksheet.write(cell, str(value) if type(value) is bytes else value, format)
+                    worksheet.write(cell, str(value) if type(value) is bytes else value, format)
             else:
-                self.__worksheet.write(cell, "", format)
+                worksheet.write(cell, "", format)
 
         cell = self.__cell_coord(Headers.message, rowtype)
-        self.__worksheet.set_row(self.__row_count, None, None, RowLevels[rowtype])
+        worksheet.set_row(self.__row_count, None, None, RowLevels[rowtype])
         return cell
 
 
     def __add_processing_stats(self):
-        stats_worksheet = self.__workbook.add_worksheet('Logs Processing Statistics')
-        stats_worksheet.tab_color = "96FF33"
+        stats_worksheet = self.__create_worksheet( 'Logs Processing Statistics', "96FF33")
         stats_worksheet.set_column('A:A', 200)
         rowpos= 0
         for stat in self.__log_folder_parser.processing_stats:
@@ -184,8 +184,7 @@ class LogXlsxWriter(object):
             rowpos += 1
 
     def __add_session_stats(self):
-        stats_worksheet = self.__workbook.add_worksheet('Load Statistics')
-        stats_worksheet.tab_color = "1072BA"
+        stats_worksheet = self.__create_worksheet('Load Statistics', "1072BA")
         stats_worksheet.set_column('A:A', 70)
         stats_worksheet.set_column('B:C', 20)
         stats_worksheet.set_column('D:F', 15)
@@ -268,11 +267,11 @@ class LogXlsxWriter(object):
         format = self.__style_manager.get_format(RowTypes.file, StyleType.default, '')
         stats_worksheet.set_column('A:A', 10)
         stats_worksheet.write('A1', 'Count', format)
-        stats_worksheet.set_column('B:B', 10)
+        stats_worksheet.set_column('B:B', 15)
         stats_worksheet.write('B1', 'Message', format)
         stats_worksheet.set_column('C:C', 10)
         stats_worksheet.write('C1', 'Ratio (%)', format)
-        stats_worksheet.set_column('D:D', 120)
+        stats_worksheet.set_column('D:D', 130)
         stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
         stats_worksheet.write('E1', 'Reference', format)
@@ -290,9 +289,11 @@ class LogXlsxWriter(object):
 
     def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
         for match in similarity.matches:
+            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.date)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), match.log_line.date, format)
+            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.time)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), match.log_line.time, format)
             format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, '')
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), '', format)
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), '', format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.ratio, format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
             format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
@@ -302,8 +303,7 @@ class LogXlsxWriter(object):
 
     #
     def __add_similarities(self):
-        stats_worksheet = self.__workbook.add_worksheet('Log Similarities')
-        stats_worksheet.tab_color = "FF9900"
+        stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
         self.__write_similarities_header(stats_worksheet)
 
         row_pos = 1
@@ -313,8 +313,7 @@ class LogXlsxWriter(object):
 
     #
     def __add_machine_user_stats(self):
-        stats_worksheet = self.__workbook.add_worksheet('Crossed stats')
-        stats_worksheet.tab_color = "FFFF00"
+        stats_worksheet = self.__create_worksheet('Crossed stats', "FFFF00")
         stats_worksheet.set_column('A:A', 15)
         stats_worksheet.set_column('B:B', 15)
         stats_worksheet.set_column('C:C', 15)
@@ -325,29 +324,29 @@ class LogXlsxWriter(object):
         rowpos = self.__write_dict(rowpos, stats_worksheet, 'Users', self.__log_folder_parser.machine_user_stats.users)
         rowpos = self.__write_dict(rowpos, stats_worksheet, 'Machines', self.__log_folder_parser.machine_user_stats.machines)
 
-    def __append_file(self, parsed_file):
+    def __append_file(self, worksheet, parsed_file):
         row = parsed_file.as_csv_row
-        self.append_row(row, RowTypes.file, StyleType.default)
+        self.__append_row(worksheet, row, RowTypes.file, StyleType.default)
         self.__row_count += 1
 
-    def __append_session(self, session):
+    def __append_session(self, worksheet, session):
         row = session.as_csv_row
-        self.append_row(row, RowTypes.session, StyleType.crashed if row[Headers.has_crashed] else StyleType.default)
+        self.__append_row(worksheet, row, RowTypes.session, StyleType.crashed if row[Headers.has_crashed] else StyleType.default)
         self.__row_count += 1
 
-    def __append_line(self, line_as_csv):
-        cell = self.append_row(line_as_csv, RowTypes.line, StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
+    def __append_line(self, worksheet, line_as_csv):
+        cell = self.__append_row(worksheet, line_as_csv, RowTypes.line, StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
         self.__row_count += 1
         return cell
 
-    def __add_log_entries(self):
+    def __add_log_entries(self, worksheet):
         row = {}
         try:
             # dump the file
             for parsed_file in self.__log_folder_parser.parsed_files:
-                self.__append_file(parsed_file)
+                self.__append_file(worksheet, parsed_file)
                 for session in parsed_file.sessions:
-                    self.__append_session(session)
+                    self.__append_session(worksheet, session)
                     # dump the lines
                     for line in session.lines:
                         row = line.as_csv_row
@@ -358,24 +357,31 @@ class LogXlsxWriter(object):
                         row[Headers.message] = clean_up_text_for_excel(row[Headers.message])
                         row[Headers.context] = clean_up_text_for_excel(row[Headers.context])
                         row[Headers.session] = session.session_id
-                        cell = self.__append_line(row)
+                        cell = self.__append_line(worksheet, row)
                         setattr(line, 'excel_cell', cell)
 
         except:
             logging.exception('Unable to add line to excel file:' + str(row))
 
-    def save(self):
-        self.__worksheet.set_column('A:A', 35)
-        self.__worksheet.set_column('B:F', 12)
-        self.__worksheet.set_column('G:J', 8)
-        self.__worksheet.set_column('K:N', 15)
-        self.__worksheet.set_column('O:O', 45)
-        self.__worksheet.set_column('P:P', 55)
+    def __add_log_compilation(self):
+        worksheet = self.__create_worksheet( "Log Compilation", "FF3300")
+        worksheet.set_column('A:A', 35)
+        worksheet.set_column('B:F', 12)
+        worksheet.set_column('G:J', 8)
+        worksheet.set_column('K:N', 15)
+        worksheet.set_column('O:O', 45)
+        worksheet.set_column('P:P', 55)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
-        self.__worksheet.merge_range("A1:P1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date, self.__log_folder_parser.to_date), format)
+        worksheet.merge_range("A1:P1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
+                                                                                       self.__log_folder_parser.to_date),
+                                     format)
 
-        self.__add_log_entries()
+        self.__add_header(worksheet)
+        self.__add_log_entries(worksheet)
+
+    def save(self):
+        self.__add_log_compilation()
         self.__add_similarities()
         self.__add_machine_user_stats()
         self.__add_session_stats()

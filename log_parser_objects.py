@@ -723,6 +723,7 @@ class SimilarityList(object):
 
     def compact(self):
         # Fuzzy Match
+        idx = 0
         for text_pk, similarity_pk in self.__matches.items():
             for text_fk, similarity_fk in self.__matches.items():
                 if id(similarity_pk) == id(similarity_fk):  # don't make it match with itself
@@ -730,6 +731,9 @@ class SimilarityList(object):
                 fuzz_ratio = fuzz.ratio(text_pk, text_fk)
                 if fuzz_ratio >= 85:  # 85% identical? <- seems to be a fairly good threshold
                     self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
+            idx += 1
+            if idx % 10 == 0:
+                logging.info('{0}/{1} entries to match at best (85% min) processed'.format(idx, len(self.__matches.items())))
 
         # flush those with just no matches except themselves
         self.__matches = [similirity.sorted for similirity in self.__matches.values() if len(similirity.matches) > 0]
@@ -762,10 +766,14 @@ class LogsSimilaritiyProcessor(object):
         logging.info(msg)
 
         # 1st pass: collect exact matching
+        idx = 0
         for logfile in log_folder_parser.parsed_files:
             for session in logfile.sessions:
                 for line in session.lines:
                     self.__similarities.load_item( line, 100)
+                idx += 1
+                if idx % 10 == 0:
+                    logging.info( '{0} entries to match at 100% processed'.format(idx, log_folder_parser.files_and_sessions_and_lines_count))
 
         # 2nd pass: find similarities and compact results (remove entries without similiarities)
         self.__similarities.compact()
