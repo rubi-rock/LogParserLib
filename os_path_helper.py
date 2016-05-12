@@ -82,7 +82,7 @@ def generate_file_name(prefix='', extension = '.tmp', path = os.path.curdir):
     filename = '%s' % datetime.now().strftime('%Y%m%d-%H%M%S')
     filename = prefix + filename if prefix is not None and prefix != '' else filename
     filename = filename + extension if extension is not None and extension != '' else filename
-    return os.path.join(path, filename)
+    return os.path.join(path if path is not None else './', filename)
 
 def start_file(filename):
     if sys.platform == "win32":

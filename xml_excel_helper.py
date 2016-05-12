@@ -275,7 +275,7 @@ class LogXlsxWriter(object):
         stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
         stats_worksheet.write('E1', 'Reference', format)
-        stats_worksheet.autofilter(0, 0, len(self.__log_folder_parser.log_similiatities.similarities), 4)
+        stats_worksheet.autofilter(3, 0, len(self.__log_folder_parser.log_similiatities.similarities_count), 4)
 
     def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
@@ -287,7 +287,8 @@ class LogXlsxWriter(object):
         row_pos += 1
         return row_pos
 
-    def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
+    def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos, limit):
+        count = 0
         for match in similarity.matches:
             format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.date)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), match.log_line.date, format)
@@ -299,6 +300,10 @@ class LogXlsxWriter(object):
             format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
             stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
             row_pos += 1
+            if limit is not None:
+                count += 1
+                if count >= limit:
+                    break
         return row_pos
 
     #
@@ -306,10 +311,21 @@ class LogXlsxWriter(object):
         stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
         self.__write_similarities_header(stats_worksheet)
 
-        row_pos = 1
+        format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
+        stats_worksheet.merge_range("A1:E1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
+                                                                                       self.__log_folder_parser.to_date),
+                                     format)
+        row_pos = 3
+        #excel can have until 65536 hyperlinks, still the file is not anymore manageable (cannot change a column size
+        # or save successfully). Therefore we must limit to a certain number of items to log in excel.
+        if self.__log_folder_parser.log_similiatities.similarities.similarities_count > 32768:
+            limit = int(32768 / len(self.__log_folder_parser.log_similiatities.similarities))
+        else:
+            limit = None
+
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
             row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
-            row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos)
+            row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos, limit)
 
     #
     def __add_machine_user_stats(self):
@@ -393,13 +409,15 @@ class LogXlsxWriter(object):
 #
 #
 #
-def GetOutputXlsxFileName(xlsx_file_name=None):
+def GetOutputXlsxFileName(source_path, xlsx_file_name=None):
     if xlsx_file_name is None:
-        xlsx_file_name = os_path_helper.generate_file_name('Log Compilation - ', '.xlsx')
+        xlsx_file_name = os_path_helper.generate_file_name('Log Compilation - ', '.xlsx', source_path if source_path is not None else None)
     elif not os.path.isabs(xlsx_file_name):
-        xlsx_file_name = os.path.join(os.path.curdir, xlsx_file_name)
+        xlsx_file_name = os.path.join(source_path if source_path is not None else os.path.curdir, xlsx_file_name)
+
     if not xlsx_file_name.endswith('.xlsx'):
         xlsx_file_name = xlsx_file_name + '.xlsx'
+
     return xlsx_file_name
 
 

@@ -137,6 +137,8 @@ class LogParserMainWindows(object):
     # Path field changed event handler
     def __edt_path_changed(self, text):
         self.__ui.actionParse.setEnabled(os.path.exists(text))
+        self.__ui.edt_output.setText(GetOutputXlsxFileName(text))
+
 
     # Callback to display progresses
     def __progress_callback(self, **kwargs):

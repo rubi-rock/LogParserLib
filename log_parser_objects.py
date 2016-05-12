@@ -760,6 +760,12 @@ class LogsSimilaritiyProcessor(object):
     def similarities(self):
         return self.__similarities.items
 
+    def similarities_count(self):
+        count = len(self.__similarities)
+        for similarity in self.__similarities.items:
+            count += len(similarity.items)
+        return count
+
     def process(self, log_folder_parser):
         lt = other_helpers.ProcessTimer()
         msg = 'Matching lines similarities...'
