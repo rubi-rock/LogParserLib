@@ -275,7 +275,7 @@ class LogXlsxWriter(object):
         stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
         stats_worksheet.write('E1', 'Reference', format)
-        stats_worksheet.autofilter(3, 0, len(self.__log_folder_parser.log_similiatities.similarities_count), 4)
+        stats_worksheet.autofilter(3, 0, self.__log_folder_parser.log_similiatitises.similarities_count, 4)
 
     def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
@@ -308,6 +308,8 @@ class LogXlsxWriter(object):
 
     #
     def __add_similarities(self):
+        if self.__log_folder_parser.log_similiatities is None:
+            returns
         stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
         self.__write_similarities_header(stats_worksheet)
 

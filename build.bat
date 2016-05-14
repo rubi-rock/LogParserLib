@@ -29,45 +29,26 @@ copy ..\*.py
 
 REM =================== Sart the build ===================
 REM .... Run PyInstaller
-REM pyinstaller --clean ..\patient_kiosk.py > build.log 2>&1
 C:\Python34\Scripts\pyinstaller --clean gui_main.spec > build.log 2>&1
 
 REM ........ Check build
-cd dist\patient_kiosk
+cd dist\
 if exist include rmdir /s /q include
-if not exist gui_main.exe (
+if not exist LogParserLib.exe (
 	REM Build failed, log file opening...!?!?!?
 	GOTO END
 )
-ren gui_main.exe LogParserLib.exe
+
 cd ..\..
 
 
-REM =================== Add required files ===================
-REM copy .\requirements\DLLs\*.* dist\patient_kiosk > nul
-REM xcopy /Q /I /E ..\static dist\patient_kiosk\static
-REM xcopy /Q /I /E ..\templates dist\patient_kiosk\templates
-REM xcopy /Q /I /E ..\translations dist\patient_kiosk\translations
-
 REM .
 REM ............ Build done!
-REM ................ Package available in : dist\patient_kiosk
+REM ................ Package available in : dist\LogParserLib
 REM .
 REM =================== Finish !!! ===================
-REM .
-REM .
-REM ********************************* WARNING *********************************
-REM If you get an error about the uuid module (related to _mssqpl.pyx) when you
-REM run patient_kiosk.exe then you need to copy the file from
-REM requirements\PyInstaller\hook-_mssql.py to the Python' library package path
-REM .
-REM This path looks like
-REM   C:\Python27\Lib\site-packages\PyInstaller-2.1-py2.7.egg\PyInstaller\hooks
-REM but it depends on your python version and instalation path (c:\Python27),
-REM yourversion of PyInstaller (PyInstaller-2.1-py2.7.egg) and eventually it
-REM depends how you installed PyInstaller (windows installer or manually).
-REM ********************************* WARNING *********************************
-
 
 :END
 if exist build.log start notepad.exe build.log
+
+cd ..
