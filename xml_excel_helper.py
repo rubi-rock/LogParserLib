@@ -309,7 +309,7 @@ class LogXlsxWriter(object):
     #
     def __add_similarities(self):
         if self.__log_folder_parser.log_similiatities is None:
-            returns
+            return
         stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
         self.__write_similarities_header(stats_worksheet)
 
