@@ -706,6 +706,10 @@ class SimilarityMatches(Similarity):
         self.__matches = sorted(self.__matches, key=lambda x: x.ratio, reverse=True)
         return self
 
+    @property
+    def count(self):
+        return len(self.__matches)
+
 
 class SimilarityList(object):
     def __init__(self):
@@ -732,7 +736,7 @@ class SimilarityList(object):
                 if fuzz_ratio >= 85:  # 85% identical? <- seems to be a fairly good threshold
                     self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
             idx += 1
-            if idx % 10 == 0:
+            if idx % 100 == 0:
                 logging.info('{0}/{1} entries to match at best (85% min) processed'.format(idx, len(self.__matches.items())))
 
         # flush those with just no matches except themselves
@@ -751,6 +755,10 @@ class SimilarityList(object):
     def items(self):
         return self.__matches
 
+    @property
+    def count(self):
+        return len(self.__matches)
+
 
 class LogsSimilaritiyProcessor(object):
     def __init__(self):
@@ -760,10 +768,15 @@ class LogsSimilaritiyProcessor(object):
     def similarities(self):
         return self.__similarities.items
 
+    @property
+    def block_count(self):
+        return self.__similarities.count
+
+    @property
     def similarities_count(self):
-        count = len(self.__similarities)
+        count = self.__similarities.count
         for similarity in self.__similarities.items:
-            count += len(similarity.items)
+            count += similarity.count
         return count
 
     def process(self, log_folder_parser):
@@ -784,5 +797,5 @@ class LogsSimilaritiyProcessor(object):
         # 2nd pass: find similarities and compact results (remove entries without similiarities)
         self.__similarities.compact()
 
-        msg = 'Matching done - {0} for {1} resulting blocks of lines'.format(lt.time_to_str, len(self.__similarities.items))
+        msg = 'Matching done - {0} sec. for {1} resulting blocks of lines'.format(lt.time_to_str, len(self.__similarities.items))
         logging.info(msg)

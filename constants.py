@@ -28,7 +28,7 @@ IndexedHeaders = {x: i + 1 for i, x in enumerate(Headers)}
 #
 # Enumerates the row type when saving/loading to/from a CSV file
 #
-RowTypes = ListEnum(['file', 'session', 'line'])
+RowTypes = ListEnum(['error', 'file', 'session', 'line'])
 
 #
 # Enumerates the info shared to be displayed in a statusbar

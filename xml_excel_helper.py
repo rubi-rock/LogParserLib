@@ -1,3 +1,5 @@
+from math import trunc
+
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 import logging
@@ -13,7 +15,7 @@ from other_helpers import ListEnum
 #
 CellFormat = ListEnum(['default', Headers.file, Headers.date, Headers.time])
 StyleType = ListEnum(['default', 'crashed', 'alt1', 'alt2', 'url_alt1', 'url_alt2', 'url_crashed'])
-RowLevels = { RowTypes.file: {'level': 0, 'collapsed': True}, RowTypes.session: {'level': 1}, RowTypes.line: {'level': 2}}
+RowLevels = { RowTypes.error: {'level': 0}, RowTypes.file: {'level': 1, 'collapsed': True}, RowTypes.session: {'level': 2}, RowTypes.line: {'level': 3}}
 
 
 #
@@ -41,6 +43,7 @@ class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
         self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'FFFFFF'}
+        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'red', 'font_color': 'white'}
         self.__hyperlink_style = {'underline': 1}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
         self.__time_format = {'num_format': 'hh:mm:ss.000;@'}
@@ -52,7 +55,11 @@ class StyleManager(object):
         self.__alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'black'}
         self.__url_alt_color_1 = {'bg_color': 'ffffb3', 'font_color': 'blue', 'underline': 1}
         self.__url_alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'blue', 'underline': 1}
-        self.__styles =  { RowTypes.file:
+        self.__styles =  { RowTypes.error:
+                            {
+                                StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
+                            },
+                            RowTypes.file:
                             {
                                 StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
                             },
@@ -77,6 +84,8 @@ class StyleManager(object):
             for styletype, stylelist in stylegroup.items():
                 style = self.__default_style.copy()
 
+                if rowtype == RowTypes.error:
+                    style.update(self.__error_style)
                 if rowtype == RowTypes.file:
                     style.update(self.__file_style)
                 elif rowtype == RowTypes.session:
@@ -121,6 +130,8 @@ class LogXlsxWriter(object):
         self.__row_count = 0
         self.__workbook = xlsxwriter.Workbook(filename)
         self.__style_manager = StyleManager(self.__workbook)
+        self.__url_added_to_excel = 0
+        self.__url_count = 0
 
     def __create_worksheet(self, name, color):
         worksheet = self.__workbook.add_worksheet(name)
@@ -162,7 +173,12 @@ class LogXlsxWriter(object):
             if column_name in row_as_csv.keys():
                 value = row_as_csv[column_name]
                 if column_name == Headers.file:
-                    worksheet.write_url(cell, r'external:' + value, format)
+                    # use only 16384 links on files and sessions because excel supports only 64k urls and we need a
+                    # bunch for the similarities
+                    if rowtype == RowTypes.line and self.__log_folder_parser.files_and_sessions_and_lines_count > 16384:
+                        worksheet.write(cell, value, format)
+                    else:
+                        worksheet.write_url(cell, r'external:' + value, format)
                 elif rowtype == RowTypes.session and column_name == Headers.message:
                     worksheet.merge_range(cell, str(value) if type(value) is bytes else value, format)
                 else:
@@ -275,7 +291,8 @@ class LogXlsxWriter(object):
         stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
         stats_worksheet.write('E1', 'Reference', format)
-        stats_worksheet.autofilter(3, 0, self.__log_folder_parser.log_similiatitises.similarities_count, 4)
+        last_row = self.__log_folder_parser.log_similiatities.similarities_count
+        stats_worksheet.autofilter(3, 0, last_row, 4)
 
     def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
@@ -284,10 +301,12 @@ class LogXlsxWriter(object):
         stats_worksheet.set_row(row_pos, 30)
         format = self.__style_manager.get_format(RowTypes.session, StyleType.url_crashed, '')
         stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( similarity.log_line.excel_cell), format)
+        self.__url_count += 1
+        self.__url_added_to_excel += 1
         row_pos += 1
         return row_pos
 
-    def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos, limit):
+    def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
         count = 0
         for match in similarity.matches:
             format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.date)
@@ -298,18 +317,33 @@ class LogXlsxWriter(object):
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.ratio, format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
             format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
-            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
+            if self.__url_count <= 16384 and (similarity.limit is None or count < similarity.limit):
+                stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
+                self.__url_added_to_excel += 1
+            else:
+                stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), 'Log Compilation Tab, Cell : {0}'.format(match.log_line.excel_cell), format)
+            self.__url_count += 1
+            count += 1
             row_pos += 1
-            if limit is not None:
-                count += 1
-                if count >= limit:
-                    break
         return row_pos
+
+    #
+    def __set_similiarities_limit(self):
+        # excel can have until 65536 hyperlinks, still the file is not anymore manageable (cannot change a column size
+        # or even cannot save successfully). Therefore we must limit to a certain number of items to log in excel.
+        if self.__log_folder_parser.log_similiatities.similarities_count > 16384:
+            max_capacity = trunc(16384 / self.__log_folder_parser.log_similiatities.block_count)
+            logging.info("URL limit fixed to: {0}".format(max_capacity))
+            for similiarity in self.__log_folder_parser.log_similiatities.similarities:
+                setattr(similiarity, 'limit', min(max_capacity, similiarity.count))
+        else:
+            for similiarity in self.__log_folder_parser.log_similiatities.similarities:
+                setattr(similiarity, 'limit', None)
 
     #
     def __add_similarities(self):
         if self.__log_folder_parser.log_similiatities is None:
-            returns
+            return
         stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
         self.__write_similarities_header(stats_worksheet)
 
@@ -318,16 +352,14 @@ class LogXlsxWriter(object):
                                                                                        self.__log_folder_parser.to_date),
                                      format)
         row_pos = 3
-        #excel can have until 65536 hyperlinks, still the file is not anymore manageable (cannot change a column size
-        # or save successfully). Therefore we must limit to a certain number of items to log in excel.
-        if self.__log_folder_parser.log_similiatities.similarities.similarities_count > 32768:
-            limit = int(32768 / len(self.__log_folder_parser.log_similiatities.similarities))
-        else:
-            limit = None
+        # excel can have until 65536 hyperlinks, still even with less, when there are too much link then the file is not
+        # anymore manageable (cannot change a column size or save successfully). Therefore we must limit to a certain
+        # number of items to log in excel.
+        self.__set_similiarities_limit()
 
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
             row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
-            row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos, limit)
+            row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos)
 
     #
     def __add_machine_user_stats(self):
@@ -406,6 +438,7 @@ class LogXlsxWriter(object):
         self.__add_processing_stats()
 
         self.__workbook.close()
+        logging.info("{0}/{1} URLs added to the excel file.".format(self.__url_added_to_excel, self.__url_count))
 
 
 #
@@ -425,7 +458,7 @@ def GetOutputXlsxFileName(source_path, xlsx_file_name=None):
 
 def WriteLogFolderParserToXSLX(log_folder_parser, xlsx_file_name=None):
     try:
-        xlsx_file_name = GetOutputXlsxFileName(xlsx_file_name)
+        #xlsx_file_name = GetOutputXlsxFileName(xlsx_file_name)
 
         # Create a workbook and add a worksheet.
         LogXlsxWriter(log_folder_parser, xlsx_file_name).save()

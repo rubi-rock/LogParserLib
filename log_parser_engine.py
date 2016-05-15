@@ -634,7 +634,7 @@ class FolderLogParser(object):
     #
     # Process all files
     #
-    def do_parse_files(self, autoopen=True):
+    def  do_parse_files(self, autoopen=True):
         self.__timer = other_helpers.ElapseTimer()
         pt = other_helpers.ProcessTimer()
         try:
