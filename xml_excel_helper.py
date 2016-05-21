@@ -16,7 +16,7 @@ from other_helpers import ListEnum
 CellFormat = ListEnum(['default', Headers.file, Headers.date, Headers.time])
 StyleType = ListEnum(['default', 'crashed', 'alt1', 'alt2', 'url_alt1', 'url_alt2', 'url_crashed'])
 RowLevels = { RowTypes.error: {'level': 0}, RowTypes.file: {'level': 1, 'collapsed': True}, RowTypes.session: {'level': 2}, RowTypes.line: {'level': 3}}
-
+WarningLevel =  ListEnum(['low', 'medium', 'high'])
 
 #
 #
@@ -43,6 +43,7 @@ class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
         self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'FFFFFF'}
+        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'orange', 'font_color': 'white'}
         self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'red', 'font_color': 'white'}
         self.__hyperlink_style = {'underline': 1}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
@@ -55,6 +56,14 @@ class StyleManager(object):
         self.__alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'black'}
         self.__url_alt_color_1 = {'bg_color': 'ffffb3', 'font_color': 'blue', 'underline': 1}
         self.__url_alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'blue', 'underline': 1}
+
+        self.__styles = {}
+        self.__prepare_styles()
+
+        self.__warning_styles = {}
+        self.__prepare_warning_styles()
+
+    def __prepare_styles(self):
         self.__styles =  { RowTypes.error:
                             {
                                 StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
@@ -77,8 +86,10 @@ class StyleManager(object):
                                 StyleType.url_alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None}
                             }
                         }
+
         self.__build_style()
 
+    #
     def __build_style(self):
         for rowtype, stylegroup in self.__styles.items():
             for styletype, stylelist in stylegroup.items():
@@ -116,10 +127,19 @@ class StyleManager(object):
 
                     stylelist[cellformat] = self.__workbook.add_format(final_style)
 
+    #
+    def __prepare_warning_styles(self):
+        self.__warning_styles = { WarningLevel.low : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FAAC58'}),
+                                 WarningLevel.medium : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FF8000'}),
+                                 WarningLevel.high : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'DF0101'})}
+
+    #
     def get_format(self, row_type, style_type, column_name):
         cellformat = get_cell_format(column_name)
         return self.__styles[row_type][style_type][cellformat]
 
+    def get_warning_format(self, level):
+        return self.__warning_styles[level]
 
 #
 #
@@ -223,6 +243,7 @@ class LogXlsxWriter(object):
             rowpos += 1
         stats_worksheet.autofilter(0, 0, rowpos, 5)
 
+
     #
     def __write_dict(self, starting_row, stats_worksheet, title, grid_dict):
         row_pos = starting_row
@@ -264,10 +285,16 @@ class LogXlsxWriter(object):
                     if type(value) is dict:
                         i = 0
                         for x in value.values():
-                            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4 + i), x)
+                            warning_format = self.__style_manager.get_warning_format(WarningLevel.high) if x > 15 \
+                                else self.__style_manager.get_warning_format(WarningLevel.medium) if x > 10 \
+                                else self.__style_manager.get_warning_format(WarningLevel.low) if x > 5 else None
+                            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4 + i), x, warning_format)
                             i += 1
                     else:
-                        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), value)
+                        warning_format = self.__style_manager.get_warning_format(WarningLevel.high) if value > 15 \
+                            else self.__style_manager.get_warning_format(WarningLevel.medium) if value > 10 \
+                            else self.__style_manager.get_warning_format(WarningLevel.low) if value > 5 else None
+                        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), value, warning_format)
 
                 row_pos += 1
                 stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Total:', format)
@@ -279,6 +306,7 @@ class LogXlsxWriter(object):
 
         return row_pos + 1      # +1 for some space
 
+    #
     def __write_similarities_header(self, stats_worksheet):
         format = self.__style_manager.get_format(RowTypes.file, StyleType.default, '')
         stats_worksheet.set_column('A:A', 10)
