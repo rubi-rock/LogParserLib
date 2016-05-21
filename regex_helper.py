@@ -235,7 +235,9 @@ class StringDateHelper(object):
     @staticmethod
     def __str_to_date_using_map(text):
         transtext = text.translate(StringDateHelper.__trantab)
-        dt = datetime.datetime(*map(int, transtext.split(',')))
+        values = [int(x) for x in transtext.split(',')]
+        values[-1] = values[-1] * 1000
+        dt = datetime.datetime(*values)
         return dt
 
     @staticmethod

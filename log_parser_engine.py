@@ -127,7 +127,7 @@ from regex_helper import RegExpSet, PreparedExpressionList, LogLineSplitter
 DETAILLED_LOGGING_NONE = 0  # Nothing
 DETAILLED_LOGGING_FILE = 1  # Statis about the file only
 DETAILLED_LOGGING_SESSION = 2  # details of the file (sessions & lines preserved)
-DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_SESSION
+DETAILLED_LOGGING_LEVEL = DETAILLED_LOGGING_NONE
 
 
 #
