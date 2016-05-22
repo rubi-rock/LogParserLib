@@ -9,14 +9,15 @@ import os_path_helper
 from constants import Headers, IndexedHeaders, RowTypes
 from other_helpers import ListEnum
 
-
 #
 # Enumerates the row type when saving/loading to/from a CSV file
 #
 CellFormat = ListEnum(['default', Headers.file, Headers.date, Headers.time])
-StyleType = ListEnum(['default', 'crashed', 'alt1', 'alt2', 'url_alt1', 'url_alt2', 'url_crashed'])
-RowLevels = { RowTypes.error: {'level': 0}, RowTypes.file: {'level': 1, 'collapsed': True}, RowTypes.session: {'level': 2}, RowTypes.line: {'level': 3}}
-WarningLevel =  ListEnum(['low', 'medium', 'high'])
+StyleType = ListEnum(['default', 'crashed', 'alt1', 'alt2', 'percent_alt1', 'percent_alt2', 'url_alt1', 'url_alt2', 'url_crashed'])
+RowLevels = {RowTypes.error: {'level': 0}, RowTypes.file: {'level': 1, 'collapsed': True},
+             RowTypes.session: {'level': 2}, RowTypes.line: {'level': 3}}
+WarningLevel = ListEnum(['low', 'medium', 'high'])
+
 
 #
 #
@@ -43,17 +44,21 @@ class StyleManager(object):
     def __init__(self, workbook):
         self.__workbook = workbook
         self.__default_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'FFFFFF'}
-        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'orange', 'font_color': 'white'}
-        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'red', 'font_color': 'white'}
+        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'orange',
+                              'font_color': 'white'}
+        self.__error_style = {'valign': 'top', 'text_wrap': True, 'top': 1, 'border_color': 'red',
+                              'font_color': 'white'}
         self.__hyperlink_style = {'underline': 1}
         self.__date_format = {'num_format': 'yyyy-mm-dd'}
         self.__time_format = {'num_format': 'hh:mm:ss.000;@'}
-        self.__file_style =  {'bold': True, 'bg_color': '0066cc', 'font_color': 'white'}
+        self.__file_style = {'bold': True, 'bg_color': '0066cc', 'font_color': 'white'}
         self.__session_style = {'italic': True, 'bg_color': '80bfff', 'font_color': 'black'}
         self.__crahsed_style = {'italic': True, 'bg_color': 'ff9900', 'font_color': 'white'}
         self.__url_crahsed_style = {'italic': True, 'bg_color': 'ff9900', 'font_color': 'blue', 'underline': 1}
         self.__alt_color_1 = {'bg_color': 'ffffb3', 'font_color': 'black'}
         self.__alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'black'}
+        self.__percent_alt_color_1 = {'num_format': '0%', 'bg_color': 'ffffb3', 'font_color': 'black'}
+        self.__percent_alt_color_2 = {'num_format': '0%', 'bg_color': 'ffffcc', 'font_color': 'black'}
         self.__url_alt_color_1 = {'bg_color': 'ffffb3', 'font_color': 'blue', 'underline': 1}
         self.__url_alt_color_2 = {'bg_color': 'ffffcc', 'font_color': 'blue', 'underline': 1}
 
@@ -64,28 +69,41 @@ class StyleManager(object):
         self.__prepare_warning_styles()
 
     def __prepare_styles(self):
-        self.__styles =  { RowTypes.error:
-                            {
-                                StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                            },
-                            RowTypes.file:
-                            {
-                                StyleType.default : {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                            },
-                           RowTypes.session:
-                            {
-                                StyleType.default: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.crashed: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.url_crashed: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None}
-                            },
-                           RowTypes.line:
-                            {
-                                StyleType.alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.url_alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None},
-                                StyleType.url_alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None, CellFormat.time: None}
-                            }
-                        }
+        self.__styles = {RowTypes.error:
+            {
+                StyleType.default: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                    CellFormat.time: None},
+            },
+            RowTypes.file:
+                {
+                    StyleType.default: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                        CellFormat.time: None},
+                },
+            RowTypes.session:
+                {
+                    StyleType.default: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                        CellFormat.time: None},
+                    StyleType.crashed: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                        CellFormat.time: None},
+                    StyleType.url_crashed: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                            CellFormat.time: None}
+                },
+            RowTypes.line:
+                {
+                    StyleType.alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                     CellFormat.time: None},
+                    StyleType.alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                     CellFormat.time: None},
+                    StyleType.percent_alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                         CellFormat.time: None},
+                    StyleType.percent_alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                         CellFormat.time: None},
+                    StyleType.url_alt1: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                         CellFormat.time: None},
+                    StyleType.url_alt2: {CellFormat.default: None, CellFormat.file: None, CellFormat.date: None,
+                                         CellFormat.time: None}
+                }
+        }
 
         self.__build_style()
 
@@ -111,6 +129,10 @@ class StyleManager(object):
                         style.update(self.__alt_color_1)
                     elif styletype == StyleType.alt2:
                         style.update(self.__alt_color_2)
+                    elif styletype == StyleType.percent_alt1:
+                        style.update(self.__percent_alt_color_1)
+                    elif styletype == StyleType.percent_alt2:
+                        style.update(self.__percent_alt_color_2)
                     elif styletype == StyleType.url_alt1:
                         style.update(self.__url_alt_color_1)
                     else:
@@ -129,9 +151,12 @@ class StyleManager(object):
 
     #
     def __prepare_warning_styles(self):
-        self.__warning_styles = { WarningLevel.low : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FAAC58'}),
-                                 WarningLevel.medium : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FF8000'}),
-                                 WarningLevel.high : self.__workbook.add_format({'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'DF0101'})}
+        self.__warning_styles = {WarningLevel.low: self.__workbook.add_format(
+            {'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FAAC58'}),
+                                 WarningLevel.medium: self.__workbook.add_format(
+                                     {'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'FF8000'}),
+                                 WarningLevel.high: self.__workbook.add_format(
+                                     {'valign': 'top', 'text_wrap': True, 'bold': True, 'font_color': 'DF0101'})}
 
     #
     def get_format(self, row_type, style_type, column_name):
@@ -140,6 +165,7 @@ class StyleManager(object):
 
     def get_warning_format(self, level):
         return self.__warning_styles[level]
+
 
 #
 #
@@ -159,31 +185,33 @@ class LogXlsxWriter(object):
         worksheet.set_paper(17)
         worksheet.fit_to_pages(1, 0)
         worksheet.set_landscape()
-        worksheet.set_margins(0.5,0.5,0.5,0.5)
+        worksheet.set_margins(0.5, 0.5, 0.5, 0.5)
         return worksheet
 
-    def __cell_coord(self, col_name, rowtype, row = None):
+    def __cell_coord(self, col_name, rowtype, row=None):
         if row is None:
             row = self.__row_count
         col = IndexedHeaders[col_name]
-        cell = xl_rowcol_to_cell( row, col - 1)
+        cell = xl_rowcol_to_cell(row, col - 1)
         if rowtype == RowTypes.session and col_name == Headers.message:
-            cell1 = xl_rowcol_to_cell( row, col)
+            cell1 = xl_rowcol_to_cell(row, col)
             cell = cell + ':' + cell1
         return cell
 
     def __add_header(self, worksheet):
-        header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date, self.__log_folder_parser.to_date)
+        header = '&L{0}&Rfrom: {1} to : {2}'.format(self.__log_folder_parser.folder, self.__log_folder_parser.from_date,
+                                                    self.__log_folder_parser.to_date)
         worksheet.set_header(header)
 
-        worksheet.autofilter(3, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
+        if self.__log_folder_parser.files_and_sessions_and_lines_count < 16384:
+            worksheet.autofilter(3, 0, self.__log_folder_parser.files_and_sessions_and_lines_count, len(Headers) - 1)
         self.__row_count = 3
 
-        header_style = self.__workbook.add_format({'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
+        header_style = self.__workbook.add_format(
+            {'bold': True, 'bg_color': '4169FF', 'font_color': 'white', 'align': 'center'})
         for header in Headers:
             worksheet.write(self.__cell_coord(header, None), header.replace('_', ' ').title(), header_style)
         self.__row_count += 1
-
 
     def __append_row(self, worksheet, row_as_csv, rowtype, styletype):
         for column_name in Headers:
@@ -210,11 +238,10 @@ class LogXlsxWriter(object):
         worksheet.set_row(self.__row_count, None, None, RowLevels[rowtype])
         return cell
 
-
     def __add_processing_stats(self):
-        stats_worksheet = self.__create_worksheet( 'Logs Processing Statistics', "96FF33")
+        stats_worksheet = self.__create_worksheet('Logs Processing Statistics', "96FF33")
         stats_worksheet.set_column('A:A', 200)
-        rowpos= 0
+        rowpos = 0
         for stat in self.__log_folder_parser.processing_stats:
             stats_worksheet.write(rowpos, 0, str(stat))
             rowpos += 1
@@ -241,8 +268,8 @@ class LogXlsxWriter(object):
             stats_worksheet.write(rowpos, 4, stat.start_time, format_time)
             stats_worksheet.write(rowpos, 5, stat.end_time, format_time)
             rowpos += 1
-        stats_worksheet.autofilter(0, 0, rowpos, 5)
-
+        if rowpos < 16384:
+            stats_worksheet.autofilter(0, 0, rowpos, 5)
 
     #
     def __write_dict(self, starting_row, stats_worksheet, title, grid_dict):
@@ -255,14 +282,16 @@ class LogXlsxWriter(object):
         for category_type, category_value in grid_dict.items():
             row_pos += 1
             format = self.__style_manager.get_format(RowTypes.session, StyleType.default, '')
-            stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 5), category_type, format)
+            stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 5),
+                                        category_type, format)
 
             section_idx = 0
             for subcategory_type, subcategory_value in category_value.items():
                 row_pos += 1
                 section_idx += 1
                 value_is_multiple_columns = False
-                format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if section_idx % 2 == 1 else StyleType.alt2, '')
+                format = self.__style_manager.get_format(RowTypes.line,
+                                                         StyleType.alt1 if section_idx % 2 == 1 else StyleType.alt2, '')
 
                 for name, value in subcategory_value.items():
                     if type(value) is dict:
@@ -271,12 +300,14 @@ class LogXlsxWriter(object):
 
                 if value_is_multiple_columns:
                     i = 0
-                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 3), subcategory_type, format)
+                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 3),
+                                                subcategory_type, format)
                     for x in value.keys():
                         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4 + i), x.replace('_', ' '), format)
                         i += 1
                 else:
-                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 5), subcategory_type, format)
+                    stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 2) + ':' + xl_rowcol_to_cell(row_pos, 5),
+                                                subcategory_type, format)
 
                 total_start_pos = row_pos + 1
                 for name, value in subcategory_value.items():
@@ -298,13 +329,15 @@ class LogXlsxWriter(object):
 
                 row_pos += 1
                 stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Total:', format)
-                stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=SUM(E{0}:E{1})'.format(total_start_pos, row_pos), format)
+                stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4),
+                                              '=SUM(E{0}:E{1})'.format(total_start_pos, row_pos), format)
                 if value_is_multiple_columns:
-                    stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 5), '=SUM(F{0}:F{1})'.format(total_start_pos, row_pos), format)
+                    stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 5),
+                                                  '=SUM(F{0}:F{1})'.format(total_start_pos, row_pos), format)
                 else:
                     stats_worksheet.write(xl_rowcol_to_cell(row_pos, 5), '', format)
 
-        return row_pos + 1      # +1 for some space
+        return row_pos + 1  # +1 for some space
 
     #
     def __write_similarities_header(self, stats_worksheet):
@@ -319,37 +352,50 @@ class LogXlsxWriter(object):
         stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
         stats_worksheet.write('E1', 'Reference', format)
-        last_row = self.__log_folder_parser.log_similiatities.similarities_count
-        stats_worksheet.autofilter(3, 0, last_row, 4)
 
+    #
     def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), len(similarity.matches), format)
-        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 3), similarity.message, format)
+        stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 3),
+                                    similarity.message, format)
         stats_worksheet.set_row(row_pos, 30)
         format = self.__style_manager.get_format(RowTypes.session, StyleType.url_crashed, '')
-        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format( similarity.log_line.excel_cell), format)
+        stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4),
+                                      '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(
+                                          similarity.log_line.excel_cell), format)
         self.__url_count += 1
         self.__url_added_to_excel += 1
         row_pos += 1
         return row_pos
 
+    #
     def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
         count = 0
         for match in similarity.matches:
-            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.date)
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.alt1 if match.ratio == 100 else StyleType.alt2,
+                                                     Headers.date)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), match.log_line.date, format)
-            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, Headers.time)
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.alt1 if match.ratio == 100 else StyleType.alt2,
+                                                     Headers.time)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), match.log_line.time, format)
-            format = self.__style_manager.get_format(RowTypes.line, StyleType.alt1 if match.ratio == 100 else StyleType.alt2, '')
-            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.ratio, format)
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.percent_alt1 if match.ratio == 100 else StyleType.percent_alt2, '')
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match.ratio / 100, format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
-            format = self.__style_manager.get_format(RowTypes.line,  StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2, '')
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.url_alt1 if match.ratio == 100 else StyleType.url_alt2,
+                                                     '')
             if self.__url_count <= 16384 and (similarity.limit is None or count < similarity.limit):
-                stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4), '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(match.log_line.excel_cell), format)
+                stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4),
+                                              '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(
+                                                  match.log_line.excel_cell), format)
                 self.__url_added_to_excel += 1
             else:
-                stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), 'Log Compilation Tab, Cell : {0}'.format(match.log_line.excel_cell), format)
+                stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4),
+                                      'Log Compilation Tab, Cell : {0}'.format(match.log_line.excel_cell), format)
             self.__url_count += 1
             count += 1
             row_pos += 1
@@ -368,6 +414,37 @@ class LogXlsxWriter(object):
             for similiarity in self.__log_folder_parser.log_similiatities.similarities:
                 setattr(similiarity, 'limit', None)
 
+    def __add_similarities_compilation(self, stats_worksheet, row_pos):
+        format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), 'Matches', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), 'Similar', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), 'Total', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Message', format)
+        row_pos += 1
+
+        count = 0
+        for similarity in self.__log_folder_parser.log_similiatities.similarities:
+            match_count = 1
+            similarity_count = 0
+            for match in similarity.matches:
+                if match.ratio == 100:
+                    match_count += 1
+                else:
+                    similarity_count += 1
+
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.alt1 if count % 2 == 0 else StyleType.alt2,
+                                                     '')
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), match_count, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), similarity_count, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match_count + similarity_count, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
+            count += 1
+            row_pos += 1
+
+        row_pos += 3
+        return row_pos
+
     #
     def __add_similarities(self):
         if self.__log_folder_parser.log_similiatities is None:
@@ -376,14 +453,21 @@ class LogXlsxWriter(object):
         self.__write_similarities_header(stats_worksheet)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
-        stats_worksheet.merge_range("A1:E1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
-                                                                                       self.__log_folder_parser.to_date),
-                                     format)
+        stats_worksheet.merge_range("A1:E1",
+                                    "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
+                                                                             self.__log_folder_parser.to_date),
+                                    format)
         row_pos = 3
         # excel can have until 65536 hyperlinks, still even with less, when there are too much link then the file is not
         # anymore manageable (cannot change a column size or save successfully). Therefore we must limit to a certain
         # number of items to log in excel.
         self.__set_similiarities_limit()
+
+        row_pos = self.__add_similarities_compilation(stats_worksheet, row_pos)
+
+        last_row = self.__log_folder_parser.log_similiatities.similarities_count
+        if last_row < 16384:
+            stats_worksheet.autofilter(row_pos, 0, row_pos + last_row, 4)
 
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
             row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
@@ -398,9 +482,17 @@ class LogXlsxWriter(object):
         stats_worksheet.set_column('D:D', 15)
         stats_worksheet.set_column('E:E', 25)
         stats_worksheet.set_column('F:F', 25)
-        rowpos = self.__write_dict(0, stats_worksheet, 'Applications', self.__log_folder_parser.machine_user_stats.applications)
+
+        format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
+        stats_worksheet.merge_range("A1:F1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
+                                                                                self.__log_folder_parser.to_date),
+                              format)
+
+        rowpos = self.__write_dict(2, stats_worksheet, 'Applications',
+                                   self.__log_folder_parser.machine_user_stats.applications)
         rowpos = self.__write_dict(rowpos, stats_worksheet, 'Users', self.__log_folder_parser.machine_user_stats.users)
-        rowpos = self.__write_dict(rowpos, stats_worksheet, 'Machines', self.__log_folder_parser.machine_user_stats.machines)
+        rowpos = self.__write_dict(rowpos, stats_worksheet, 'Machines',
+                                   self.__log_folder_parser.machine_user_stats.machines)
 
     def __append_file(self, worksheet, parsed_file):
         row = parsed_file.as_csv_row
@@ -409,11 +501,13 @@ class LogXlsxWriter(object):
 
     def __append_session(self, worksheet, session):
         row = session.as_csv_row
-        self.__append_row(worksheet, row, RowTypes.session, StyleType.crashed if row[Headers.has_crashed] else StyleType.default)
+        self.__append_row(worksheet, row, RowTypes.session,
+                          StyleType.crashed if row[Headers.has_crashed] else StyleType.default)
         self.__row_count += 1
 
     def __append_line(self, worksheet, line_as_csv):
-        cell = self.__append_row(worksheet, line_as_csv, RowTypes.line, StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
+        cell = self.__append_row(worksheet, line_as_csv, RowTypes.line,
+                                 StyleType.alt1 if line_as_csv[Headers.group] % 2 == 0 else StyleType.alt2)
         self.__row_count += 1
         return cell
 
@@ -442,7 +536,7 @@ class LogXlsxWriter(object):
             logging.exception('Unable to add line to excel file:' + str(row))
 
     def __add_log_compilation(self):
-        worksheet = self.__create_worksheet( "Log Compilation", "FF3300")
+        worksheet = self.__create_worksheet("Log Compilation", "FF3300")
         worksheet.set_column('A:A', 35)
         worksheet.set_column('B:F', 12)
         worksheet.set_column('G:J', 8)
@@ -452,8 +546,8 @@ class LogXlsxWriter(object):
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
         worksheet.merge_range("A1:P1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
-                                                                                       self.__log_folder_parser.to_date),
-                                     format)
+                                                                                self.__log_folder_parser.to_date),
+                              format)
 
         self.__add_header(worksheet)
         self.__add_log_entries(worksheet)
@@ -474,7 +568,8 @@ class LogXlsxWriter(object):
 #
 def GetOutputXlsxFileName(source_path, xlsx_file_name=None):
     if xlsx_file_name is None:
-        xlsx_file_name = os_path_helper.generate_file_name('Log Compilation - ', '.xlsx', source_path if source_path is not None else None)
+        xlsx_file_name = os_path_helper.generate_file_name('Log Compilation - ', '.xlsx',
+                                                           source_path if source_path is not None else None)
     elif not os.path.isabs(xlsx_file_name):
         xlsx_file_name = os.path.join(source_path if source_path is not None else os.path.curdir, xlsx_file_name)
 
@@ -486,7 +581,7 @@ def GetOutputXlsxFileName(source_path, xlsx_file_name=None):
 
 def WriteLogFolderParserToXSLX(log_folder_parser, xlsx_file_name=None):
     try:
-        #xlsx_file_name = GetOutputXlsxFileName(xlsx_file_name)
+        # xlsx_file_name = GetOutputXlsxFileName(xlsx_file_name)
 
         # Create a workbook and add a worksheet.
         LogXlsxWriter(log_folder_parser, xlsx_file_name).save()
