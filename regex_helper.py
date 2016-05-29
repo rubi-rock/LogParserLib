@@ -137,10 +137,19 @@ class LogLineSplitter(object):
         try:
             value = 0
             area = ''
-            if log_line_dict.level == 'STATISTIC' and log_line_dict. message.rstrip().endswith('!!!!!!! sec.'):
-                time_str = str(log_line_dict.message.rsplit(': ', 1)[1].split(' ', 1)[0])
-                value = int(float(time_str) * 1000) # sec => ms
-                area = 'stats'
+            time_str = None
+            if log_line_dict.level == 'STATISTIC':
+                if log_line_dict. message.rstrip().endswith('! sec.'):
+                    time_str = str(log_line_dict.message.rsplit(': ', 1)[1].split(' ', 1)[0])
+                elif 'sec !' in log_line_dict. message.rstrip():
+                    try:
+                        time_str = str(log_line_dict.message.rsplit('sec !', 1)[0].strip().rsplit(' ', 1)[1])
+                    except:
+                        pass
+
+                if time_str is not None:
+                    value = int(float(time_str) * 1000) # sec => ms
+                    area = 'stats'
             elif log_line_dict.module is not None and log_line_dict.module.startswith('Mapgen') and log_line_dict.message.rstrip().endswith(' ms !!'):
                 time_str = str(log_line_dict.message.rsplit('**', 1)[1].split(' ms !!', 1)[0])
                 value = int(time_str)  # trunc less than millisecs
