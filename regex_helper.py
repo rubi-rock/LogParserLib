@@ -78,7 +78,7 @@ class RegExpSet(object):
     @staticmethod
     def search_any_expression(in_text, prepared_expressions):
         result = None
-        in_text = in_text.upper()  # allows simple text comparison to math (case insensitive)
+        in_text = in_text.upper()  # allows simple text comparison to match (case insensitive)
 
         # process simple text search first - because they are more efficient than regular expression
         for key, plain_text in prepared_expressions.text_expressions.items():
@@ -88,7 +88,7 @@ class RegExpSet(object):
 
         # process regular expression when nothing matches yet
         for key, expression in prepared_expressions.regular_expressions.items():
-            result = result or expression.search(in_text)
+            result = expression.search(in_text)
             if result is not None:
                 logging.debug("Expression '{0}' match found in line '{1}'".format(key, in_text))
                 return key
