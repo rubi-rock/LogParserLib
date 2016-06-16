@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import re
 from datetime import datetime, date, timedelta
 from fuzzywuzzy import fuzz
 
@@ -726,6 +727,7 @@ class SimilarityList(object):
         self.__matches[message].add_match(log_line, ratio)
 
     def compact(self):
+        perf_match = re.compile(r'(\d+\.\d+ sec !*)')
         # Fuzzy Match
         idx = 0
         for text_pk, similarity_pk in self.__matches.items():
@@ -735,6 +737,16 @@ class SimilarityList(object):
                 fuzz_ratio = fuzz.ratio(text_pk, text_fk)
                 if fuzz_ratio >= 85:  # 85% identical? <- seems to be a fairly good threshold
                     self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
+                else:
+                    # performance logs are formated like this:
+                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  10.40420472 sec !!!!"
+                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  4.83133432 sec !!!!"
+                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
+                    new_pk = perf_match.sub( r'', text_pk)
+                    new_fk = perf_match.sub( r'', text_fk)
+                    if new_fk == new_pk:
+                        self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
+
             idx += 1
             if idx % 100 == 0:
                 logging.info('{0}/{1} entries to match at best (85% min) processed'.format(idx, len(self.__matches.items())))
