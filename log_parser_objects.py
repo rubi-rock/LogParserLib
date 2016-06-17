@@ -256,6 +256,7 @@ class Log_Line(object):
         self.__data[Headers.type] = RowTypes.line
         self.__data[Headers.context] = str(log_context)
         self.__fixe_date()
+        self.__matched = False
 
     # Fix the date format. There are several cases:
     #   . the date is already a date type - fine don't fix anything
@@ -272,6 +273,12 @@ class Log_Line(object):
             self.__data[Headers.date] = dt.date()
             self.__data[Headers.time] = dt.time()
 
+    @property
+    def matched(self):
+        return self.__matched
+    @matched.setter
+    def matched(self, value):
+        self.__matched = value
 
     @property
     def date(self):
@@ -725,19 +732,34 @@ class SimilarityList(object):
 
     def add_reference(self, message, log_line, ratio):
         self.__matches[message].add_match(log_line, ratio)
+        log_line.matched = True
 
     def compact(self):
         perf_match = re.compile(r'(\d+\.\d+ sec !*)')
+        time_match = re.compile(r'(\d+ ms !*)')
         # Fuzzy Match
         idx = 0
         for text_pk, similarity_pk in self.__matches.items():
+            if similarity_pk.log_line.matched:
+                continue
             for text_fk, similarity_fk in self.__matches.items():
+                if similarity_fk.log_line.matched:
+                    continue
                 if id(similarity_pk) == id(similarity_fk):  # don't make it match with itself
                     continue
                 fuzz_ratio = fuzz.ratio(text_pk, text_fk)
                 if fuzz_ratio >= 85:  # 85% identical? <- seems to be a fairly good threshold
                     self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
-                else:
+                elif text_pk.startswith('**') and text_fk.startswith('**'):
+                    # performance logs are formated like this:
+                    #   "**859 ms !!
+                    #   "**735 ms !!
+                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
+                    new_pk = time_match.sub( r'', text_pk)
+                    new_fk = time_match.sub( r'', text_fk)
+                    if new_fk == new_pk:
+                        self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
+                elif text_pk.startswith('LOG') and text_fk.startswith('LOG'):
                     # performance logs are formated like this:
                     #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  10.40420472 sec !!!!"
                     #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  4.83133432 sec !!!!"
