@@ -420,6 +420,7 @@ class LogXlsxWriter(object):
         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), 'Similar', format)
         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), 'Total', format)
         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Message', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), 'Link', format)
         row_pos += 1
 
         count = 0
@@ -439,11 +440,25 @@ class LogXlsxWriter(object):
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), similarity_count, format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), match_count + similarity_count, format)
             stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), match.message, format)
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), '', format)
             count += 1
             row_pos += 1
 
         row_pos += 3
         return row_pos
+
+    def __update_similarity_compilation_with_links(self, stats_worksheet):
+        row_pos = 4
+        count = 0
+        for similarity in self.__log_folder_parser.log_similiatities.similarities:
+            format = self.__style_manager.get_format(RowTypes.line,
+                                                     StyleType.url_alt1 if count % 2 == 0 else StyleType.url_alt2,
+                                                     '')
+            stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4),
+                                          '=HYPERLINK("#\'Log Similarities\'!B{0}","Details")'.format(
+                                              similarity.row_pos), format)
+            row_pos += 1
+            count += 1
 
     #
     def __add_similarities(self):
@@ -457,12 +472,12 @@ class LogXlsxWriter(object):
                                     "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
                                                                              self.__log_folder_parser.to_date),
                                     format)
-        row_pos = 3
         # excel can have until 65536 hyperlinks, still even with less, when there are too much link then the file is not
         # anymore manageable (cannot change a column size or save successfully). Therefore we must limit to a certain
         # number of items to log in excel.
         self.__set_similiarities_limit()
 
+        row_pos = 3
         row_pos = self.__add_similarities_compilation(stats_worksheet, row_pos)
 
         last_row = self.__log_folder_parser.log_similiatities.similarities_count
@@ -471,8 +486,10 @@ class LogXlsxWriter(object):
 
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
             row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
+            setattr(similarity, 'row_pos', row_pos)
             row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos)
 
+        self.__update_similarity_compilation_with_links(stats_worksheet)
     #
     def __add_machine_user_stats(self):
         stats_worksheet = self.__create_worksheet('Crossed stats', "FFFF00")
