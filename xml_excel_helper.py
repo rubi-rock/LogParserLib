@@ -558,8 +558,8 @@ class LogXlsxWriter(object):
         worksheet.set_column('B:F', 12)
         worksheet.set_column('G:J', 8)
         worksheet.set_column('K:N', 15)
-        worksheet.set_column('O:O', 55)
-        worksheet.set_column('P:P', 90)
+        worksheet.set_column('O:O', 60)
+        worksheet.set_column('P:P', 300)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
         worksheet.merge_range("A1:P1", "Log extracted from: {0} to: {1}".format(self.__log_folder_parser.from_date,
