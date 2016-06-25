@@ -722,57 +722,67 @@ class SimilarityMatches(Similarity):
 class SimilarityList(object):
     def __init__(self):
         self.__matches = {}
+        #self.__perf_match = re.compile(r'(\d+\.\d+ sec !*)')
+        self.__perf_started = re.compile(r'(\(\s*started at [^)]+\s*\))')
+        self.__perf_time = re.compile(r'(\s*\d+\.\d+ sec !*)')
+        self.__perf_onidle = re.compile(r'(\s*IdleTime\=\s*\d+\.\d+ sec\s*)')
+        self.__time_match = re.compile(r'(\d+ ms !*)')
+
 
     def load_item(self, log_line, ratio):
-        if log_line.message not in self.__matches.keys():
-            new_match = SimilarityMatches(log_line, ratio)
-            self.__matches[log_line.message] = new_match
-        else:
-            self.__matches[log_line.message].add_match(log_line, 100)
+        try:
+            if log_line.message in self.__matches.keys():
+                self.__matches[log_line.message].add_match(log_line, 100)
+            else:
+                self.__fuzzymatch(log_line)
+                pass
+        except:
+            pass
+
+    def __fuzzymatch(self, log_line):
+        try:
+            # Fuzzy Match
+            matches = False
+            for text_pk, similarity_pk in self.__matches.items():
+                fuzz_ratio = fuzz.ratio(text_pk, log_line.message)
+                if text_pk.startswith('**') and log_line.message.startswith('**'):
+                    # performance logs are formated like this:
+                    #   "**859 ms !!
+                    #   "**735 ms !!
+                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
+                    new_pk = self.__time_match.sub( r'', text_pk)
+                    new_fk = self.__time_match.sub( r'', log_line.message)
+                    matches = new_fk == new_pk
+                elif text_pk.startswith('LOG') and log_line.message.startswith('LOG'):
+                    # performance logs are formated like this:
+                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  10.40420472 sec !!!!"
+                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  4.83133432 sec !!!!"
+                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
+                    new_pk = self.__perf_started.sub( r'', text_pk)
+                    new_pk = self.__perf_time.sub( r'', new_pk)
+                    new_pk = self.__perf_onidle.sub( r'', new_pk)
+                    new_fk = self.__perf_started.sub( r'', log_line.message)
+                    new_fk = self.__perf_time.sub( r'', new_fk)
+                    new_fk = self.__perf_onidle.sub( r'', new_fk)
+                    matches = new_fk.strip() == new_pk.strip()
+                else:
+                    matches = fuzz_ratio > 85
+
+                if matches:
+                    self.add_reference(text_pk, log_line, fuzz_ratio)
+                    break
+
+            if not matches:
+                new_match = SimilarityMatches(log_line, 100)
+                self.__matches[log_line.message] = new_match
+        except:
+            pass
 
     def add_reference(self, message, log_line, ratio):
         self.__matches[message].add_match(log_line, ratio)
         log_line.matched = True
 
-    def compact(self):
-        perf_match = re.compile(r'(\d+\.\d+ sec !*)')
-        time_match = re.compile(r'(\d+ ms !*)')
-        # Fuzzy Match
-        idx = 0
-        for text_pk, similarity_pk in self.__matches.items():
-            if similarity_pk.log_line.matched:
-                continue
-            for text_fk, similarity_fk in self.__matches.items():
-                if similarity_fk.log_line.matched:
-                    continue
-                if id(similarity_pk) == id(similarity_fk):  # don't make it match with itself
-                    continue
-                fuzz_ratio = fuzz.ratio(text_pk, text_fk)
-                if fuzz_ratio >= 85:  # 85% identical? <- seems to be a fairly good threshold
-                    self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
-                elif text_pk.startswith('**') and text_fk.startswith('**'):
-                    # performance logs are formated like this:
-                    #   "**859 ms !!
-                    #   "**735 ms !!
-                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
-                    new_pk = time_match.sub( r'', text_pk)
-                    new_fk = time_match.sub( r'', text_fk)
-                    if new_fk == new_pk:
-                        self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
-                elif text_pk.startswith('LOG') and text_fk.startswith('LOG'):
-                    # performance logs are formated like this:
-                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  10.40420472 sec !!!!"
-                    #   "LOG [CHECKWFONIDLE] DME_MD_DB/APPOINTMENTS:  4.83133432 sec !!!!"
-                    # Let's try to ignore the time, if the remaining text is the same: BINGO!
-                    new_pk = perf_match.sub( r'', text_pk)
-                    new_fk = perf_match.sub( r'', text_fk)
-                    if new_fk == new_pk:
-                        self.add_reference(text_pk, similarity_fk.log_line, fuzz_ratio)
-
-            idx += 1
-            if idx % 100 == 0:
-                logging.info('{0}/{1} entries to match at best (85% min) processed'.format(idx, len(self.__matches.items())))
-
+    def sort(self):
         # flush those with just no matches except themselves
         self.__matches = [similirity.sorted for similirity in self.__matches.values() if len(similirity.matches) > 0]
         self.__matches = sorted(self.__matches, key=lambda x: len(x.matches), reverse=True)
@@ -828,8 +838,7 @@ class LogsSimilaritiyProcessor(object):
                 if idx % 10 == 0:
                     logging.info( '{0} entries to match at 100% processed'.format(idx, log_folder_parser.files_and_sessions_and_lines_count))
 
-        # 2nd pass: find similarities and compact results (remove entries without similiarities)
-        self.__similarities.compact()
+        self.__similarities.sort()
 
         msg = 'Matching done - {0} sec. for {1} resulting blocks of lines'.format(lt.time_to_str, len(self.__similarities.items))
         logging.info(msg)
