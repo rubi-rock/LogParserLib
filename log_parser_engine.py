@@ -1,6 +1,7 @@
 import logging
 import os.path
 from datetime import timedelta
+import gc
 
 # keep LogUtility, even if it seems unused, it sets up the logging automatically
 import os_path_helper
@@ -645,6 +646,8 @@ class FolderLogParser(object):
             self.__files_processed = 0
             for file_info in self.__log_file_info_list:
                 try:
+                    gc.collect()
+
                     parsed_file = self.parse_one_file(file_info)
                     if parsed_file is not None:
                         self.__lines_to_analyze_count += parsed_file.lines_count
