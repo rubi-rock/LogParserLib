@@ -340,21 +340,25 @@ class LogXlsxWriter(object):
         return row_pos + 1  # +1 for some space
 
     #
-    def __write_similarities_header(self, stats_worksheet):
+    def __write_similarities_header(self, stats_worksheet, row_pos):
         format = self.__style_manager.get_format(RowTypes.file, StyleType.default, '')
         stats_worksheet.set_column('A:A', 10)
-        stats_worksheet.write('A1', 'Count', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), 'Count', format)
         stats_worksheet.set_column('B:B', 15)
-        stats_worksheet.write('B1', 'Message', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 1), 'Message', format)
         stats_worksheet.set_column('C:C', 10)
-        stats_worksheet.write('C1', 'Ratio (%)', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 2), 'Ratio (%)', format)
         stats_worksheet.set_column('D:D', 130)
-        stats_worksheet.write('D1', 'Matched Message (identical, similar, maybe in cascade)', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 3), 'Matched Message (identical, similar, maybe in cascade)', format)
         stats_worksheet.set_column('E:E', 30)
-        stats_worksheet.write('E1', 'Reference', format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4), 'Reference', format)
+        stats_worksheet.set_column('F:F', 15)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 5), 'Navigation', format)
+        row_pos += 1
+        return row_pos
 
     #
-    def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos):
+    def __write_similiarities_block_master(self, stats_worksheet, similarity, row_pos, section_row_pos):
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
         stats_worksheet.write(xl_rowcol_to_cell(row_pos, 0), len(similarity.matches), format)
         stats_worksheet.merge_range(xl_rowcol_to_cell(row_pos, 1) + ':' + xl_rowcol_to_cell(row_pos, 3),
@@ -364,6 +368,7 @@ class LogXlsxWriter(object):
         stats_worksheet.write_formula(xl_rowcol_to_cell(row_pos, 4),
                                       '=HYPERLINK("#\'Log Compilation\'!{0}","Click to go to original extracted line")'.format(
                                           similarity.log_line.excel_cell), format)
+        stats_worksheet.write(xl_rowcol_to_cell(row_pos, 5), '=HYPERLINK("#\'Log Similarities\'!D{0}","Summary")'.format(section_row_pos), format)
         self.__url_count += 1
         self.__url_added_to_excel += 1
         row_pos += 1
@@ -371,6 +376,7 @@ class LogXlsxWriter(object):
 
     #
     def __write_similiarities_block_detailled(self, stats_worksheet, similarity, row_pos):
+        begin_pos = row_pos
         count = 0
         for match in similarity.matches:
             format = self.__style_manager.get_format(RowTypes.line,
@@ -396,6 +402,10 @@ class LogXlsxWriter(object):
             else:
                 stats_worksheet.write(xl_rowcol_to_cell(row_pos, 4),
                                       'Log Compilation Tab, Cell : {0}'.format(match.log_line.excel_cell), format)
+
+            stats_worksheet.write(xl_rowcol_to_cell(row_pos, 5),
+                                  '=HYPERLINK("#\'Log Similarities\'!D{0}","Go to section")'.format(
+                                      begin_pos), format)
             self.__url_count += 1
             count += 1
             row_pos += 1
@@ -465,7 +475,6 @@ class LogXlsxWriter(object):
         if self.__log_folder_parser.log_similiatities is None:
             return
         stats_worksheet = self.__create_worksheet('Log Similarities', "FF9900")
-        self.__write_similarities_header(stats_worksheet)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')
         stats_worksheet.merge_range("A1:E1",
@@ -484,10 +493,13 @@ class LogXlsxWriter(object):
         if last_row < 16384:
             stats_worksheet.autofilter(row_pos, 0, row_pos + last_row, 4)
 
+        row_pos = self.__write_similarities_header(stats_worksheet, row_pos)
+        count = 0
         for similarity in self.__log_folder_parser.log_similiatities.similarities:
-            row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos)
+            row_pos = self.__write_similiarities_block_master(stats_worksheet, similarity, row_pos, count + 5)
             setattr(similarity, 'row_pos', row_pos)
             row_pos = self.__write_similiarities_block_detailled(stats_worksheet, similarity, row_pos)
+            count += 1
 
         self.__update_similarity_compilation_with_links(stats_worksheet)
     #
@@ -558,7 +570,7 @@ class LogXlsxWriter(object):
         worksheet.set_column('B:F', 12)
         worksheet.set_column('G:J', 8)
         worksheet.set_column('K:N', 15)
-        worksheet.set_column('O:O', 60)
+        worksheet.set_column('O:O', 55)
         worksheet.set_column('P:P', 300)
 
         format = self.__style_manager.get_format(RowTypes.session, StyleType.crashed, '')

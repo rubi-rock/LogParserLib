@@ -9,6 +9,11 @@ REM wget --no-check-certificate http://download.qt.io/official_releases/online_i
 REM call qt-unified-windows-x86-online.exe
 REM del qt-unified-windows-x86-online.exe
 
-wget --no-check-certificate http://sourceforge.net/projects/pyqt/files/PyQt5/PyQt-5.6/PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
-call PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
-del PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
+REM wget --no-check-certificate http://sourceforge.net/projects/pyqt/files/PyQt5/PyQt-5.6/PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
+REM call PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
+REM del PyQt5-5.6-gpl-Py3.5-Qt5.6.0-x32-2.exe
+
+
+wget --no-check-certificate http://heanet.dl.sourceforge.net/project/pyqt/PyQt5/PyQt-5.4.1/PyQt5-5.4.1-gpl-Py3.4-Qt5.4.1-x64.exe
+call PyQt5-5.4.1-gpl-Py3.4-Qt5.4.1-x64.exe
+del PyQt5-5.4.1-gpl-Py3.4-Qt5.4.1-x64.exe
