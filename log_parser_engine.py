@@ -484,7 +484,7 @@ class FolderLogParser(object):
             self.__splitfilename = splitfilename
             self.__min_date = min_date
             self.__max_date = max_date + timedelta(hours=23, minutes=59, seconds=59)
-            self.__output = output if output is None else xml_excel_helper.GetOutputXlsxFileName(root_path)
+            self.__output = output if output is not None else xml_excel_helper.GetOutputXlsxFileName(root_path)
 
             self.__log_file_info_list = FileSeeker.walk_and_filter_in(root_path, ['*.log'],
                                                                       self.filter_on_date)
