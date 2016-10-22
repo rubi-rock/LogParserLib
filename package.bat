@@ -1,0 +1,1 @@
+zip -r LogParserLib.zip *.py install install_requirements.bat install_python_libs.bat LogParser.bat
