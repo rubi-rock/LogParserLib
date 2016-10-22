@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 import LogParserGUI
 import log_parser_engine
+import constants
 
 
 @click.command()
@@ -31,5 +32,10 @@ def show_it(path=None, fromdate=None, todate=None, output=None, splitfilename=Tr
 @click.option('--splitfilename/--no-splitfilename', is_flag=True, default=True, help='Try to split the file path and name to extract the user name and the machine (TS).')
 @click.option('--autoopen/--no-autoopen', is_flag=True, help='Open the resulting excel file. Auto-open is true by default.')
 def do_it(path=None, fromdate=None, todate=None, output=None, splitfilename=True, autoopen=True):
+
+    startdate = datetime.strptime(fromdate, "%Y-%m-%d") if fromdate is not None else None
+    enddate = datetime.strptime(todate, "%Y-%m-%d") if todate is not None else None
+
+    #print( "{0} ({1}) - {2} ({3})".format(startdate, type(startdate), enddate, type(enddate)))
     flp = log_parser_engine.FolderLogParser()
-    flp.parse(path, None, fromdate, todate, output, splitfilename, autoopen)
+    flp.parse(path, constants.DEFAULT_LOG_LEVELS, startdate, enddate, output, splitfilename, autoopen)
